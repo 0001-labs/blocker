@@ -3,29 +3,19 @@ import os.log
 
 /// Stub implementation of BlockingEngine for development and testing
 /// Logs all operations to console without actually blocking websites
+///
+/// The actual blocking is handled by macOS Screen Time settings.
+/// This app only controls WHEN blocking is active, not WHAT is blocked.
 final class StubBlockingEngine: BlockingEngine, ObservableObject {
 
     private let logger = Logger(subsystem: "com.0001labs.blocker", category: "StubBlockingEngine")
 
     @Published private(set) var isActive: Bool = false
 
-    func activate(rules: Rules) async throws {
+    func activate() async throws {
         logger.info("=== STUB: Activating blocking ===")
-        logger.info("Mode: \(rules.mode.rawValue)")
-
-        switch rules.mode {
-        case .blocklist:
-            logger.info("Blocking \(rules.restricted.count) restricted domains:")
-            for entry in rules.restricted {
-                logger.info("  - \(entry.host) (\(entry.title ?? "no title"))")
-            }
-        case .allowlist:
-            logger.info("Allowing only \(rules.allowed.count) domains:")
-            for entry in rules.allowed {
-                logger.info("  + \(entry.host) (\(entry.title ?? "no title"))")
-            }
-        }
-
+        logger.info("Screen Time restrictions would now be enforced")
+        logger.info("Configure blocked apps/websites in System Settings > Screen Time")
         logger.info("=================================")
 
         isActive = true
@@ -33,7 +23,7 @@ final class StubBlockingEngine: BlockingEngine, ObservableObject {
 
     func deactivate() async throws {
         logger.info("=== STUB: Deactivating blocking ===")
-        logger.info("All websites are now accessible")
+        logger.info("Screen Time restrictions lifted")
         logger.info("===================================")
 
         isActive = false
@@ -43,58 +33,38 @@ final class StubBlockingEngine: BlockingEngine, ObservableObject {
 // MARK: - Future Implementation Notes
 
 /*
- ## NetworkExtension Content Filter Approach
+ ## Screen Time / FamilyControls API Approach
 
- To implement actual website blocking, you would need to:
+ To implement actual Screen Time integration:
 
- 1. Create a System Extension target with NEFilterDataProvider
- 2. Add the "com.apple.developer.networking.networkextension" entitlement
- 3. Configure the network extension in Info.plist
- 4. Implement NEFilterDataProvider to inspect and block traffic
+ 1. Import FamilyControls and ManagedSettings frameworks
+ 2. Request authorization with AuthorizationCenter
+ 3. Use ManagedSettingsStore to apply restrictions
 
- Example structure:
+ Example:
 
  ```swift
- class ContentFilterProvider: NEFilterDataProvider {
-     override func startFilter(completionHandler: @escaping (Error?) -> Void) {
-         // Initialize filter
+ import FamilyControls
+ import ManagedSettings
+
+ class ScreenTimeBlockingEngine: BlockingEngine {
+     let store = ManagedSettingsStore()
+
+     func activate() async throws {
+         // Apply shield to all apps/websites configured in Screen Time
+         store.shield.applications = .all
+         store.shield.webDomains = .all
      }
 
-     override func handleNewFlow(_ flow: NEFilterFlow) -> NEFilterNewFlowVerdict {
-         guard let browserFlow = flow as? NEFilterBrowserFlow,
-               let url = browserFlow.url else {
-             return .allow()
-         }
-
-         // Check URL against rules
-         if shouldBlock(url) {
-             return .drop()
-         }
-
-         return .allow()
+     func deactivate() async throws {
+         store.shield.applications = nil
+         store.shield.webDomains = nil
      }
  }
  ```
 
- ## Configuration Profile Approach
-
- Alternatively, generate a .mobileconfig with WebContentFilter payload:
-
- ```xml
- <dict>
-     <key>PayloadType</key>
-     <string>com.apple.webcontent-filter</string>
-     <key>FilterType</key>
-     <string>BuiltIn</string>
-     <key>BlacklistedURLs</key>
-     <array>
-         <string>youtube.com</string>
-     </array>
- </dict>
- ```
-
- Limitations:
- - Requires user to manually install the profile
- - Cannot be dynamically updated without reinstalling
- - May require MDM for full functionality
+ Requirements:
+ - App must be signed with FamilyControls capability
+ - User must grant Screen Time access
+ - Only works on macOS 12+ / iOS 15+
  */

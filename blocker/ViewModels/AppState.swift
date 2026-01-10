@@ -8,17 +8,15 @@ final class AppState: ObservableObject {
     // MARK: - Services
 
     let persistence = PersistenceService()
-    let calendarService = CalendarService()
     let blockingEngine = StubBlockingEngine()
     let runtimeState = RuntimeState()
 
     lazy var scheduler: Scheduler = {
-        Scheduler(calendarService: calendarService, runtimeState: runtimeState)
+        Scheduler(runtimeState: runtimeState)
     }()
 
     // MARK: - State
 
-    @Published var rules: Rules
     @Published var schedule: Schedule
     @Published var lockState: LockState
 
@@ -28,31 +26,27 @@ final class AppState: ObservableObject {
 
     init() {
         // Load persisted state
-        self.rules = persistence.loadRules()
         self.schedule = persistence.loadSchedule()
         self.lockState = persistence.loadLockState()
 
         setupBindings()
         scheduler.schedule = schedule
         scheduler.start()
+
+        // Request notification permission
+        Task {
+            _ = await NotificationService.shared.requestPermission()
+        }
     }
 
     deinit {
-        scheduler.stop()
+        // Timer uses weak self, so no explicit cleanup needed
+        // Scheduler will be deallocated with AppState
     }
 
     // MARK: - Setup
 
     private func setupBindings() {
-        // Auto-save rules changes
-        $rules
-            .dropFirst()
-            .debounce(for: .seconds(0.5), scheduler: RunLoop.main)
-            .sink { [weak self] rules in
-                self?.persistence.saveRules(rules)
-            }
-            .store(in: &cancellables)
-
         // Auto-save schedule changes
         $schedule
             .dropFirst()
@@ -72,63 +66,76 @@ final class AppState: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Sync blocking engine with runtime state
+        // Sync blocking engine, notifications, and recovery emails with runtime state
+        // Note: Blocking rules are configured in macOS Screen Time settings
         runtimeState.$isBlockingActive
+            .removeDuplicates()
             .sink { [weak self] isActive in
                 guard let self = self else { return }
                 Task {
                     if isActive {
-                        try? await self.blockingEngine.activate(rules: self.rules)
+                        try? await self.blockingEngine.activate()
+
+                        // Send notification to set up Screen Time
+                        if let endDate = self.runtimeState.activeUntil,
+                           let reason = self.runtimeState.activeReason {
+                            await NotificationService.shared.sendBlockingStartNotification(
+                                sessionName: reason.displayDescription,
+                                endTime: endDate
+                            )
+                            // Schedule recovery email for when session ends
+                            try? await self.scheduleRecoveryEmail(sendAt: endDate)
+                        }
                     } else {
                         try? await self.blockingEngine.deactivate()
+
+                        // Send notification that blocking ended
+                        await NotificationService.shared.sendBlockingEndedNotification()
+
+                        // Clear scheduled email ID (it either sent or was cancelled)
+                        self.lockState.scheduledEmailId = nil
                     }
                 }
             }
             .store(in: &cancellables)
     }
 
-    // MARK: - PIN Verification
+    // MARK: - Recovery Email Scheduling
 
-    /// Check if an action requires PIN verification
-    func requiresPINForAction() -> Bool {
-        lockState.enabled && lockState.hasPIN && runtimeState.isBlockingActive
+    /// Schedule recovery email when blocking starts
+    func scheduleRecoveryEmail(sendAt: Date) async throws {
+        guard lockState.isConfigured,
+              let email = lockState.recoveryEmail,
+              let password = lockState.screenTimePassword else {
+            return
+        }
+
+        let emailId = try await RecoveryService.shared.scheduleRecoveryEmail(
+            recipientEmail: email,
+            password: password,
+            sendAt: sendAt
+        )
+
+        lockState.scheduledEmailId = emailId
     }
 
-    /// Verify a PIN against stored hash
-    func verifyPIN(_ pin: String) -> Bool {
-        guard let storedHash = lockState.pinHash else { return false }
-        return PINHasher.verify(pin, against: storedHash)
-    }
+    /// Cancel scheduled recovery email (e.g., if session ends early)
+    func cancelScheduledRecoveryEmail() async {
+        guard let emailId = lockState.scheduledEmailId else { return }
 
-    /// Set a new PIN
-    func setPIN(_ pin: String) {
-        lockState.pinHash = PINHasher.hash(pin)
-        lockState.enabled = true
-    }
-
-    /// Clear the PIN and disable lock
-    func clearPIN() {
-        lockState.pinHash = nil
-        lockState.enabled = false
+        try? await RecoveryService.shared.cancelRecoveryEmail(emailId: emailId)
+        lockState.scheduledEmailId = nil
     }
 
     // MARK: - Blocking Control
 
-    /// Start manual timer blocking
-    func startManualTimer(duration: TimeInterval, pinVerified: Bool = false) -> Bool {
-        if requiresPINForAction() && !pinVerified {
-            return false
-        }
-        scheduler.startManualTimer(duration: duration)
-        return true
-    }
-
     /// Stop blocking
-    func stopBlocking(pinVerified: Bool = false) -> Bool {
-        if requiresPINForAction() && !pinVerified {
-            return false
-        }
+    func stopBlocking() {
         scheduler.stopBlocking()
-        return true
+
+        // Cancel any scheduled recovery email
+        Task {
+            await cancelScheduledRecoveryEmail()
+        }
     }
 }

@@ -1,29 +1,40 @@
 import Foundation
 
-/// Lock state for PIN protection
+/// Recovery settings for Screen Time bypass prevention
 struct LockState: Codable {
-    var enabled: Bool
-    var pinHash: String?        // SHA256 hash of the PIN
+    /// Email address where recovery credentials will be sent (user's regular email)
     var recoveryEmail: String?
 
-    static let disabled = LockState(enabled: false, pinHash: nil, recoveryEmail: nil)
+    /// Apple ID email for the dedicated Screen Time account
+    var screenTimeAppleId: String?
 
-    /// Check if a PIN is set (hash exists)
-    var hasPIN: Bool {
-        pinHash != nil && !pinHash!.isEmpty
-    }
+    /// Password for the dedicated Screen Time Apple ID
+    var screenTimePassword: String?
 
-    /// Minimum PIN length
-    static let minPINLength = 4
+    /// ID of the currently scheduled recovery email (if blocking is active)
+    var scheduledEmailId: String?
 
-    /// Maximum PIN length
-    static let maxPINLength = 12
+    static let empty = LockState(
+        recoveryEmail: nil,
+        screenTimeAppleId: nil,
+        screenTimePassword: nil,
+        scheduledEmailId: nil
+    )
 
-    /// Validate PIN format (digits only, correct length)
-    static func isValidPIN(_ pin: String) -> Bool {
-        guard pin.count >= minPINLength && pin.count <= maxPINLength else {
+    /// Check if recovery is fully configured
+    var isConfigured: Bool {
+        guard let email = recoveryEmail, !email.isEmpty,
+              let appleId = screenTimeAppleId, !appleId.isEmpty,
+              let password = screenTimePassword, !password.isEmpty else {
             return false
         }
-        return pin.allSatisfy { $0.isNumber }
+        return isValidEmail(email) && isValidEmail(appleId)
+    }
+
+    /// Validate email format
+    private func isValidEmail(_ email: String) -> Bool {
+        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+        return emailPredicate.evaluate(with: email)
     }
 }

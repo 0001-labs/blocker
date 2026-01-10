@@ -6,22 +6,17 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
-            RulesView()
-                .tabItem {
-                    Label("Rules", systemImage: "list.bullet")
-                }
-
             ScheduleView()
                 .tabItem {
                     Label("Schedule", systemImage: "calendar")
                 }
 
-            LockView()
+            RecoveryView()
                 .tabItem {
-                    Label("Lock", systemImage: "lock")
+                    Label("Recovery", systemImage: "key.fill")
                 }
         }
-        .frame(minWidth: 500, minHeight: 500)
+        .frame(minWidth: 600, minHeight: 500)
     }
 }
 

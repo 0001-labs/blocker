@@ -3,15 +3,12 @@ import Combine
 
 /// Reason why blocking is currently active
 enum BlockingReason: Equatable {
-    case calendarEvent(title: String)
-    case manualTimer
+    case scheduledSession(name: String)
 
     var displayDescription: String {
         switch self {
-        case .calendarEvent(let title):
-            return "Calendar: \(title)"
-        case .manualTimer:
-            return "Manual timer"
+        case .scheduledSession(let name):
+            return "Scheduled: \(name)"
         }
     }
 }

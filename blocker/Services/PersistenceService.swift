@@ -21,26 +21,12 @@ final class PersistenceService: ObservableObject {
         return appSupport
     }
 
-    private var rulesFile: URL {
-        appSupportDirectory.appendingPathComponent("rules.json")
-    }
-
     private var scheduleFile: URL {
         appSupportDirectory.appendingPathComponent("schedule.json")
     }
 
     private var lockFile: URL {
         appSupportDirectory.appendingPathComponent("lock.json")
-    }
-
-    // MARK: - Rules
-
-    func loadRules() -> Rules {
-        load(from: rulesFile) ?? .empty
-    }
-
-    func saveRules(_ rules: Rules) {
-        save(rules, to: rulesFile)
     }
 
     // MARK: - Schedule
@@ -56,31 +42,11 @@ final class PersistenceService: ObservableObject {
     // MARK: - Lock State
 
     func loadLockState() -> LockState {
-        load(from: lockFile) ?? .disabled
+        load(from: lockFile) ?? .empty
     }
 
     func saveLockState(_ lockState: LockState) {
         save(lockState, to: lockFile)
-    }
-
-    // MARK: - Import/Export
-
-    func exportRules(_ rules: Rules) -> Data? {
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try? encoder.encode(rules)
-    }
-
-    func importRules(from data: Data) -> Rules? {
-        try? decoder.decode(Rules.self, from: data)
-    }
-
-    func exportDomainList(_ entries: [DomainEntry]) -> Data? {
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try? encoder.encode(entries)
-    }
-
-    func importDomainList(from data: Data) -> [DomainEntry]? {
-        try? decoder.decode([DomainEntry].self, from: data)
     }
 
     // MARK: - Private Helpers

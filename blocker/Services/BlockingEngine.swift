@@ -1,9 +1,10 @@
 import Foundation
 
-/// Protocol defining the interface for website blocking engines
+/// Protocol defining the interface for blocking engines
+/// The actual blocking rules are configured in macOS Screen Time settings
 protocol BlockingEngine {
-    /// Activate blocking with the given rules
-    func activate(rules: Rules) async throws
+    /// Activate blocking (triggers Screen Time restrictions)
+    func activate() async throws
 
     /// Deactivate blocking
     func deactivate() async throws
