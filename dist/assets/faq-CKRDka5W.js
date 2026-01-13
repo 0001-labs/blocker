@@ -1,4 +1,4 @@
-var i=Object.defineProperty;var a=(t,e,o)=>e in t?i(t,e,{enumerable:!0,configurable:!0,writable:!0,value:o}):t[e]=o;var r=(t,e,o)=>a(t,typeof e!="symbol"?e+"":e,o);import"./modulepreload-polyfill-B5Qt9EMX.js";import"./app-header-BLTtKcoa.js";import{LitElement as l,css as c,html as n}from"https://esm.sh/lit@3";class s extends l{render(){const e=new Date().getFullYear();return n`
+var i=Object.defineProperty;var l=(t,e,o)=>e in t?i(t,e,{enumerable:!0,configurable:!0,writable:!0,value:o}):t[e]=o;var r=(t,e,o)=>l(t,typeof e!="symbol"?e+"":e,o);import"./modulepreload-polyfill-B5Qt9EMX.js";import"./app-header-BLTtKcoa.js";import{LitElement as a,css as c,html as n}from"https://esm.sh/lit@3";class s extends a{render(){const e=new Date().getFullYear();return n`
       <footer class="footer">
         <span class="footer-copyright">${e} © 0001</span>
         <a
@@ -40,16 +40,17 @@ var i=Object.defineProperty;var a=(t,e,o)=>e in t?i(t,e,{enumerable:!0,configura
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #cecece;
+      color: var(--text-color-dimmed, #cecece);
       transition: color 0.15s;
     }
 
     .footer-github:hover {
-      color: var(--text-color, #000);
+      color: var(--text-color, #fff);
     }
 
     .footer-github svg {
       width: 20px;
       height: 20px;
+      fill: currentColor;
     }
   `);customElements.define("app-footer",s);document.querySelectorAll(".faq-question").forEach(t=>{t.addEventListener("click",()=>{t.closest(".faq-item").classList.toggle("open")})});

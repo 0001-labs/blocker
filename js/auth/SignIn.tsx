@@ -65,7 +65,7 @@ export default function SignIn() {
           <input
             type="email"
             id="email"
-            placeholder="Apple Account Email"
+            placeholder="Enter email"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
