@@ -9,6 +9,7 @@ export default defineConfig({
         main: "index.html",
         app: "app.html",
         faq: "faq.html",
+        insano: "insano.html",
       },
     },
   },
