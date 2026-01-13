@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blocker</title>
+    <title>Screen Time Blocker</title>
 
     <!-- DS one -->
     <link
@@ -100,28 +100,32 @@
         line-height: 1.5;
       }
 
-      .cta {
+      /* Auth form styles */
+      .signin-container {
         margin-top: var(--2);
-        display: flex;
-        flex-direction: column;
-        gap: var(--1);
-        align-items: center;
       }
 
-      .auth-divider {
-        color: var(--text-color-dimmed);
+      .signin-container h2 {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(20px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--1);
+        text-align: center;
+      }
+
+      .form-group {
+        margin-bottom: var(--1);
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: var(--025);
         font-size: calc(12px * var(--sf, 1));
+        color: var(--text-color-dimmed);
       }
 
-      .email-form {
-        display: flex;
-        gap: var(--05);
+      .form-group input {
         width: 100%;
-        max-width: 320px;
-      }
-
-      .email-form input {
-        flex: 1;
         padding: var(--05) var(--1);
         border: 1px solid var(--slate-light);
         border-radius: var(--025);
@@ -132,33 +136,80 @@
       }
 
       @media (prefers-color-scheme: dark) {
-        .email-form input {
+        .form-group input {
           border-color: var(--slate-dark);
         }
       }
 
-      .email-form input:focus {
+      .form-group input:focus {
         outline: none;
         border-color: var(--accent-color);
       }
 
-      .auth-message {
+      .primary-button {
+        width: 100%;
+        padding: var(--05) var(--1);
+        border: none;
+        border-radius: var(--025);
+        background: var(--accent-color);
+        color: var(--white);
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(14px * var(--sf, 1));
+        cursor: pointer;
+        margin-top: var(--1);
+      }
+
+      .primary-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .secondary-button {
+        width: 100%;
+        padding: var(--05) var(--1);
+        border: 1px solid var(--slate-light);
+        border-radius: var(--025);
+        background: transparent;
+        color: var(--text-color);
+        font-family: inherit;
+        font-size: calc(14px * var(--sf, 1));
+        cursor: pointer;
+        margin-top: var(--05);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .secondary-button {
+          border-color: var(--slate-dark);
+        }
+      }
+
+      .error-message {
+        background: var(--tuned-red);
+        color: var(--white);
+        padding: var(--05) var(--1);
+        border-radius: var(--025);
+        margin-bottom: var(--1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: calc(14px * var(--sf, 1));
+      }
+
+      .error-message button {
+        background: none;
+        border: none;
+        color: var(--white);
+        font-size: calc(18px * var(--sf, 1));
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .email-sent-message {
+        text-align: center;
         color: var(--text-color-dimmed);
         font-size: calc(14px * var(--sf, 1));
-        text-align: center;
-      }
-
-      .auth-message.error {
-        color: var(--tuned-red);
-      }
-
-      .auth-message.success {
-        color: var(--every-green);
-      }
-
-      .loading {
-        opacity: 0.6;
-        pointer-events: none;
+        margin-bottom: var(--1);
       }
 
       .footer {
@@ -190,30 +241,21 @@
           <div class="logo-cell"></div>
           <div class="logo-cell"></div>
         </div>
-        <h1>Blocker</h1>
-        <p class="subtitle">Make Screen Time actually unbypassable.</p>
+        <h1>Screen Time Blocker</h1>
+        <p class="subtitle">Make macOS Screen Time feature effective</p>
       </div>
 
       <p>
-        Most people can defeat app blockers. Blocker makes it nearly impossible
-        by holding your recovery password hostage until your blocking period
-        ends.
+        Most screen time blockers can be bypassed quite easily. Screen Time Blocker
+        is half app half guide that makes it impossible to bypass by keeping your
+        screen time recovery credentials hostage until a blocking period ends.
       </p>
 
-      <div class="how-it-works">
-        <h2>How it works</h2>
-        <ol>
-          <li>Create a dedicated Apple ID for Screen Time recovery</li>
-          <li>Store the password here (you won't be able to see it)</li>
-          <li>Schedule your blocking times</li>
-          <li>When blocking starts, set Screen Time with a random PIN</li>
-          <li>Password is only released when blocking ends</li>
-        </ol>
-      </div>
+      <p style="text-align: center; margin: var(--2) 0;">
+        <a href="faq.html" style="color: var(--accent-color);">Read the FAQ</a>
+      </p>
 
-      <div class="cta" id="auth-section">
-        <ds-button primary id="get-started">Get started</ds-button>
-      </div>
+      <div id="root"></div>
 
       <div class="footer">
         <p>
@@ -222,29 +264,6 @@
       </div>
     </div>
 
-    <script type="module">
-      import { getToken, generateVaultToken, setToken } from "./js/api.js";
-
-      // Check if user already has a vault token
-      function init() {
-        const token = getToken();
-        if (token) {
-          // Already set up, go to app
-          window.location.href = "app.html";
-        }
-      }
-
-      // Get started - generate token and go to app
-      document
-        .getElementById("get-started")
-        .addEventListener("click", () => {
-          // Generate a new vault token
-          const token = generateVaultToken();
-          setToken(token);
-          window.location.href = "app.html";
-        });
-
-      init();
-    </script>
+    <script type="module" src="/js/auth/signin-main.tsx"></script>
   </body>
 </html>

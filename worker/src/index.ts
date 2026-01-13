@@ -1,48 +1,154 @@
 /**
- * Blocker Recovery Worker
+ * Blocker Vault Worker
  *
- * Schedules and sends recovery emails containing the Screen Time Apple ID password
- * at the specified time when a blocking session ends.
+ * Credential escrow system for Screen Time blocking.
+ * Stores recovery passwords and only releases them after blocking ends.
  */
 
 export interface Env {
-  SCHEDULED_EMAILS: KVNamespace;
-  RESEND_API_KEY: string;
-  FROM_EMAIL: string;
+  VAULTS: KVNamespace;
 }
 
-interface ScheduledEmail {
+interface BlockSession {
   id: string;
-  recipientEmail: string;
-  password: string;
-  sendAt: number; // Unix timestamp in milliseconds
-  createdAt: number;
+  day: number; // 0 = Sunday, 1 = Monday, etc.
+  startHour: number;
+  startMinute: number;
+  endHour: number;
+  endMinute: number;
 }
 
-interface ScheduleRequest {
-  recipientEmail: string;
-  password: string;
-  sendAtTimestamp: number; // Unix timestamp in milliseconds
+interface Vault {
+  token: string;
+  screenTimeAppleId: string;
+  screenTimePassword: string;
+  sessions: BlockSession[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-// KV key prefix for scheduled emails
-const EMAIL_PREFIX = "email:";
-// KV key for the index of all pending emails
-const INDEX_KEY = "pending_emails_index";
+interface VaultRequest {
+  token: string;
+  screenTimeAppleId?: string;
+  screenTimePassword?: string;
+  sessions?: BlockSession[];
+}
+
+// CORS headers
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+function jsonResponse(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function errorResponse(error: string, status: number): Response {
+  return jsonResponse({ error }, status);
+}
+
+/**
+ * Check if currently in a blocking session
+ */
+function getBlockingState(sessions: BlockSession[]): {
+  isBlocking: boolean;
+  activeSession: BlockSession | null;
+  activeUntil: Date | null;
+  timeRemaining: string | null;
+} {
+  const now = new Date();
+  const currentDay = now.getDay();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  for (const session of sessions) {
+    if (session.day !== currentDay) continue;
+
+    const startMinutes = session.startHour * 60 + session.startMinute;
+    const endMinutes = session.endHour * 60 + session.endMinute;
+
+    if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+      // Currently blocking
+      const activeUntil = new Date(now);
+      activeUntil.setHours(session.endHour, session.endMinute, 0, 0);
+
+      const remainingMs = activeUntil.getTime() - now.getTime();
+      const remainingSeconds = Math.floor(remainingMs / 1000);
+      const hours = Math.floor(remainingSeconds / 3600);
+      const minutes = Math.floor((remainingSeconds % 3600) / 60);
+      const seconds = remainingSeconds % 60;
+
+      const timeRemaining =
+        hours > 0
+          ? `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+          : `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+      return {
+        isBlocking: true,
+        activeSession: session,
+        activeUntil,
+        timeRemaining,
+      };
+    }
+  }
+
+  return {
+    isBlocking: false,
+    activeSession: null,
+    activeUntil: null,
+    timeRemaining: null,
+  };
+}
+
+/**
+ * Find the next blocking session
+ */
+function getNextSession(sessions: BlockSession[]): {
+  session: BlockSession;
+  startsAt: Date;
+} | null {
+  if (sessions.length === 0) return null;
+
+  const now = new Date();
+  const currentDay = now.getDay();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let closestSession: BlockSession | null = null;
+  let closestDate: Date | null = null;
+
+  for (const session of sessions) {
+    const startMinutes = session.startHour * 60 + session.startMinute;
+
+    // Calculate days until this session
+    let daysUntil = session.day - currentDay;
+    if (daysUntil < 0 || (daysUntil === 0 && startMinutes <= currentMinutes)) {
+      daysUntil += 7;
+    }
+
+    const startsAt = new Date(now);
+    startsAt.setDate(startsAt.getDate() + daysUntil);
+    startsAt.setHours(session.startHour, session.startMinute, 0, 0);
+
+    if (!closestDate || startsAt < closestDate) {
+      closestSession = session;
+      closestDate = startsAt;
+    }
+  }
+
+  if (closestSession && closestDate) {
+    return { session: closestSession, startsAt: closestDate };
+  }
+
+  return null;
+}
 
 export default {
-  /**
-   * HTTP handler for scheduling emails
-   */
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-
-    // CORS headers
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    };
 
     // Handle CORS preflight
     if (request.method === "OPTIONS") {
@@ -50,212 +156,152 @@ export default {
     }
 
     try {
-      // POST /schedule - Schedule a new recovery email
-      if (url.pathname === "/schedule" && request.method === "POST") {
-        const body = await request.json() as ScheduleRequest;
+      // POST /vault - Create or update vault
+      if (url.pathname === "/vault" && request.method === "POST") {
+        const body = (await request.json()) as VaultRequest;
 
-        if (!body.recipientEmail || !body.password || !body.sendAtTimestamp) {
-          return new Response(
-            JSON.stringify({ error: "Missing required fields: recipientEmail, password, sendAtTimestamp" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        if (!body.token) {
+          return errorResponse("Missing token", 400);
+        }
+
+        // Check for existing vault
+        const existingData = await env.VAULTS.get(`vault:${body.token}`);
+        const existing: Vault | null = existingData
+          ? JSON.parse(existingData)
+          : null;
+
+        // If vault exists and is blocking, reject updates
+        if (existing) {
+          const { isBlocking } = getBlockingState(existing.sessions);
+          if (isBlocking) {
+            return errorResponse(
+              "Cannot modify vault during blocking",
+              403
+            );
+          }
+        }
+
+        // Create or update vault
+        const vault: Vault = {
+          token: body.token,
+          screenTimeAppleId:
+            body.screenTimeAppleId ?? existing?.screenTimeAppleId ?? "",
+          screenTimePassword:
+            body.screenTimePassword ?? existing?.screenTimePassword ?? "",
+          sessions: body.sessions ?? existing?.sessions ?? [],
+          createdAt: existing?.createdAt ?? new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        await env.VAULTS.put(`vault:${body.token}`, JSON.stringify(vault));
+
+        return jsonResponse({ ok: true });
+      }
+
+      // GET /vault?token=xxx - Get vault state (password always hidden)
+      if (url.pathname === "/vault" && request.method === "GET") {
+        const token = url.searchParams.get("token");
+        if (!token) {
+          return errorResponse("Missing token", 400);
+        }
+
+        const vaultData = await env.VAULTS.get(`vault:${token}`);
+        if (!vaultData) {
+          return errorResponse("Vault not found", 404);
+        }
+
+        const vault: Vault = JSON.parse(vaultData);
+        const blockingState = getBlockingState(vault.sessions);
+        const nextSession = blockingState.isBlocking
+          ? null
+          : getNextSession(vault.sessions);
+
+        return jsonResponse({
+          screenTimeAppleId: vault.screenTimeAppleId,
+          sessions: vault.sessions,
+          isBlocking: blockingState.isBlocking,
+          activeUntil: blockingState.activeUntil?.toISOString() ?? null,
+          timeRemaining: blockingState.timeRemaining,
+          nextSession: nextSession
+            ? {
+                startsAt: nextSession.startsAt.toISOString(),
+                day: nextSession.session.day,
+                startHour: nextSession.session.startHour,
+                startMinute: nextSession.session.startMinute,
+              }
+            : null,
+        });
+      }
+
+      // GET /password?token=xxx - Get password (only if not blocking)
+      if (url.pathname === "/password" && request.method === "GET") {
+        const token = url.searchParams.get("token");
+        if (!token) {
+          return errorResponse("Missing token", 400);
+        }
+
+        const vaultData = await env.VAULTS.get(`vault:${token}`);
+        if (!vaultData) {
+          return errorResponse("Vault not found", 404);
+        }
+
+        const vault: Vault = JSON.parse(vaultData);
+        const { isBlocking, activeUntil, timeRemaining } = getBlockingState(
+          vault.sessions
+        );
+
+        if (isBlocking) {
+          return jsonResponse(
+            {
+              error: "blocked",
+              activeUntil: activeUntil?.toISOString(),
+              timeRemaining,
+            },
+            403
           );
         }
 
-        const emailId = crypto.randomUUID();
-        const scheduledEmail: ScheduledEmail = {
-          id: emailId,
-          recipientEmail: body.recipientEmail,
-          password: body.password,
-          sendAt: body.sendAtTimestamp,
-          createdAt: Date.now(),
-        };
-
-        // Store the scheduled email
-        await env.SCHEDULED_EMAILS.put(
-          EMAIL_PREFIX + emailId,
-          JSON.stringify(scheduledEmail),
-          { expirationTtl: 60 * 60 * 24 * 7 } // 7 days TTL
-        );
-
-        // Update the index
-        await addToIndex(env, emailId);
-
-        const sendAtDate = new Date(body.sendAtTimestamp);
-        console.log(`Scheduled email ${emailId} for ${sendAtDate.toISOString()}`);
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            emailId,
-            scheduledFor: sendAtDate.toISOString()
-          }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({
+          password: vault.screenTimePassword,
+        });
       }
 
-      // DELETE /schedule/:id - Cancel a scheduled email
-      if (url.pathname.startsWith("/schedule/") && request.method === "DELETE") {
-        const emailId = url.pathname.replace("/schedule/", "");
+      // DELETE /vault?token=xxx - Delete vault (only if not blocking)
+      if (url.pathname === "/vault" && request.method === "DELETE") {
+        const token = url.searchParams.get("token");
+        if (!token) {
+          return errorResponse("Missing token", 400);
+        }
 
-        await env.SCHEDULED_EMAILS.delete(EMAIL_PREFIX + emailId);
-        await removeFromIndex(env, emailId);
+        const vaultData = await env.VAULTS.get(`vault:${token}`);
+        if (!vaultData) {
+          return errorResponse("Vault not found", 404);
+        }
 
-        return new Response(
-          JSON.stringify({ success: true, cancelled: emailId }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        const vault: Vault = JSON.parse(vaultData);
+        const { isBlocking } = getBlockingState(vault.sessions);
+
+        if (isBlocking) {
+          return errorResponse("Cannot delete vault during blocking", 403);
+        }
+
+        await env.VAULTS.delete(`vault:${vault.token}`);
+
+        return jsonResponse({ ok: true });
       }
 
-      // GET /status - Check worker status and pending emails count
+      // GET /status - Health check
       if (url.pathname === "/status" && request.method === "GET") {
-        const index = await getIndex(env);
-        return new Response(
-          JSON.stringify({
-            status: "ok",
-            pendingEmails: index.length,
-            timestamp: new Date().toISOString()
-          }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({
+          status: "ok",
+          timestamp: new Date().toISOString(),
+        });
       }
 
-      return new Response(
-        JSON.stringify({ error: "Not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-
+      return errorResponse("Not found", 404);
     } catch (error) {
       console.error("Error handling request:", error);
-      return new Response(
-        JSON.stringify({ error: "Internal server error" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-  },
-
-  /**
-   * Cron handler - runs every minute to check for emails to send
-   */
-  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    console.log("Cron triggered at", new Date().toISOString());
-
-    const now = Date.now();
-    const index = await getIndex(env);
-
-    for (const emailId of index) {
-      const emailData = await env.SCHEDULED_EMAILS.get(EMAIL_PREFIX + emailId);
-
-      if (!emailData) {
-        // Email was deleted, remove from index
-        await removeFromIndex(env, emailId);
-        continue;
-      }
-
-      const email: ScheduledEmail = JSON.parse(emailData);
-
-      // Check if it's time to send
-      if (email.sendAt <= now) {
-        console.log(`Sending recovery email ${emailId}`);
-
-        try {
-          await sendRecoveryEmail(env, email);
-
-          // Remove from KV after successful send
-          await env.SCHEDULED_EMAILS.delete(EMAIL_PREFIX + emailId);
-          await removeFromIndex(env, emailId);
-
-          console.log(`Successfully sent and removed email ${emailId}`);
-        } catch (error) {
-          console.error(`Failed to send email ${emailId}:`, error);
-          // Keep in KV for retry on next cron run
-        }
-      }
+      return errorResponse("Internal server error", 500);
     }
   },
 };
-
-/**
- * Send the recovery email via Resend
- */
-async function sendRecoveryEmail(env: Env, email: ScheduledEmail): Promise<void> {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: env.FROM_EMAIL,
-      to: email.recipientEmail,
-      subject: "Blocker: Your Screen Time Recovery Password",
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
-          <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px; color: #1a1a1a;">
-            Your blocking session has ended
-          </h1>
-          <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin-bottom: 24px;">
-            Here is your Screen Time Apple ID password to unlock your device:
-          </p>
-          <div style="background: #f5f5f5; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-            <code style="font-size: 18px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; word-break: break-all; color: #1a1a1a;">
-              ${escapeHtml(email.password)}
-            </code>
-          </div>
-          <p style="font-size: 14px; color: #8a8a8a; line-height: 1.5;">
-            Go to Settings → Screen Time → Change Screen Time Passcode → Forgot Passcode? and enter your Apple ID credentials to reset your passcode.
-          </p>
-          <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0;">
-          <p style="font-size: 12px; color: #8a8a8a;">
-            This email was sent by Blocker. If you didn't schedule this, you can safely ignore it.
-          </p>
-        </div>
-      `,
-      text: `Your blocking session has ended.\n\nYour Screen Time Apple ID password: ${email.password}\n\nGo to Settings → Screen Time → Change Screen Time Passcode → Forgot Passcode? and enter your Apple ID credentials to reset your passcode.`,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Resend API error: ${response.status} - ${errorText}`);
-  }
-}
-
-/**
- * Get the index of pending email IDs
- */
-async function getIndex(env: Env): Promise<string[]> {
-  const indexData = await env.SCHEDULED_EMAILS.get(INDEX_KEY);
-  return indexData ? JSON.parse(indexData) : [];
-}
-
-/**
- * Add an email ID to the index
- */
-async function addToIndex(env: Env, emailId: string): Promise<void> {
-  const index = await getIndex(env);
-  if (!index.includes(emailId)) {
-    index.push(emailId);
-    await env.SCHEDULED_EMAILS.put(INDEX_KEY, JSON.stringify(index));
-  }
-}
-
-/**
- * Remove an email ID from the index
- */
-async function removeFromIndex(env: Env, emailId: string): Promise<void> {
-  const index = await getIndex(env);
-  const newIndex = index.filter(id => id !== emailId);
-  await env.SCHEDULED_EMAILS.put(INDEX_KEY, JSON.stringify(newIndex));
-}
-
-/**
- * Escape HTML to prevent XSS
- */
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}

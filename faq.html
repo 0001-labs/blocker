@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FAQ - Screen Time Blocker</title>
+
+    <!-- DS one -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/ds-one@alpha/DS1/1-root/one.css"
+    />
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: var(--2);
+        min-height: 100vh;
+        background: var(--background);
+        color: var(--text-color);
+        font-family: var(--typeface-regular), system-ui, sans-serif;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        gap: var(--1);
+        margin-bottom: var(--2);
+      }
+
+      .logo {
+        width: calc(var(--2));
+        height: calc(var(--2));
+        background: var(--accent-color);
+        border-radius: 4px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 2px;
+        padding: 4px;
+      }
+
+      .logo-cell {
+        background: var(--background);
+        border-radius: 2px;
+      }
+
+      .logo-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(18px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .logo-title a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      h1 {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(28px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--2);
+      }
+
+      .faq-item {
+        margin-bottom: var(--2);
+      }
+
+      .faq-question {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(16px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--05);
+        color: var(--text-color);
+      }
+
+      .faq-answer {
+        color: var(--text-color-dimmed);
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      .faq-answer ol,
+      .faq-answer ul {
+        margin: var(--05) 0;
+        padding-left: var(--2);
+      }
+
+      .faq-answer li {
+        margin-bottom: var(--025);
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-top: var(--2);
+        color: var(--accent-color);
+      }
+
+      .footer {
+        margin-top: var(--4);
+        padding-top: var(--2);
+        border-top: 1px solid var(--slate-light);
+        text-align: center;
+        color: var(--text-color-dimmed);
+        font-size: calc(12px * var(--sf, 1));
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .footer {
+          border-top-color: var(--slate-dark);
+        }
+      }
+
+      .footer a {
+        color: var(--text-color-dimmed);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="logo">
+          <div class="logo-cell"></div>
+          <div class="logo-cell"></div>
+          <div class="logo-cell"></div>
+          <div class="logo-cell"></div>
+        </div>
+        <h2 class="logo-title"><a href="index.html">Screen Time Blocker</a></h2>
+      </div>
+
+      <h1>Frequently asked questions</h1>
+
+      <div class="faq-item">
+        <h3 class="faq-question">What is Screen Time Blocker?</h3>
+        <p class="faq-answer">
+          Screen Time Blocker is half app half guide that makes it impossible to bypass
+          by keeping your screen time recovery credentials hostage until a blocking
+          period ends.
+        </p>
+      </div>
+
+      <div class="faq-item">
+        <h3 class="faq-question">How does it work?</h3>
+        <p class="faq-answer">
+          The system uses a dedicated Apple Account for Screen Time recovery:
+        </p>
+        <ol class="faq-answer">
+          <li>Create a separate Apple Account just for Screen Time recovery</li>
+          <li>Store the Apple Account password in Screen Time Blocker (you won't be able to see it)</li>
+          <li>Set your blocking schedule (e.g., work hours)</li>
+          <li>When blocking starts, set Screen Time with a random PIN you don't remember</li>
+          <li>During blocking, you can't bypass because you don't know the PIN and Screen Time Blocker won't release the password</li>
+          <li>When blocking ends, Screen Time Blocker releases your password so you can reset Screen Time</li>
+        </ol>
+      </div>
+
+      <div class="faq-item">
+        <h3 class="faq-question">Why do I need a separate Apple Account?</h3>
+        <p class="faq-answer">
+          Screen Time has a "Forgot Passcode?" option that lets you reset using your
+          recovery Apple Account. If you use your main Apple Account, you could bypass Screen Time
+          at any moment. A dedicated recovery Apple Account with a password only Screen Time Blocker knows
+          closes this loophole.
+        </p>
+      </div>
+
+      <div class="faq-item">
+        <h3 class="faq-question">Is my password safe?</h3>
+        <p class="faq-answer">
+          Your password is stored encrypted on our servers and is never displayed in
+          the app during blocking periods. It's only released when your scheduled
+          blocking period ends. The app is hosted on Cloudflare and the source code is
+          <a href="https://github.com/0001-labs/blocker" target="_blank">open source on GitHub</a>.
+          We recommend only using this Apple Account for this app.
+        </p>
+      </div>
+
+      <div class="faq-item">
+        <h3 class="faq-question">What if I need emergency access?</h3>
+        <p class="faq-answer">
+          The whole point of Screen Time Blocker is that you can't bypass it during blocking.
+          That's what makes it effective. If you truly need emergency access, you'll
+          have to wait until the blocking period ends. Plan your schedule accordingly
+          and start with a short block.
+        </p>
+      </div>
+
+      <div class="faq-item">
+        <h3 class="faq-question">What devices does this work on?</h3>
+        <p class="faq-answer">
+          Screen Time Blocker is designed for macOS Screen Time. The web app works in any browser,
+          but the Screen Time blocking itself is a macOS feature.
+        </p>
+      </div>
+
+      <div class="faq-item">
+        <h3 class="faq-question">Is it free?</h3>
+        <p class="faq-answer">
+          Yes, Screen Time Blocker is free to use.
+        </p>
+      </div>
+
+      <div class="faq-item">
+        <h3 class="faq-question">Who built this?</h3>
+        <p class="faq-answer">
+          Screen Time Blocker is built by <a href="https://0001.one" target="_blank">0001</a>,
+          a productivity tools studio. Check out the other projects we make on
+          <a href="https://github.com/0001-labs" target="_blank">GitHub</a>.
+        </p>
+      </div>
+
+      <a href="index.html" class="back-link">&larr; Back to sign in</a>
+
+      <div class="footer">
+        <p>
+          Built by <a href="https://0001.one" target="_blank">0001</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

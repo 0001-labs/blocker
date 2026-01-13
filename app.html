@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blocker</title>
+    <title>Screen Time Blocker</title>
 
     <!-- DS one -->
     <link
@@ -331,7 +331,7 @@
             <div class="logo-cell"></div>
             <div class="logo-cell"></div>
           </div>
-          <h1 class="logo-title">Blocker</h1>
+          <h1 class="logo-title">Screen Time Blocker</h1>
         </div>
         <div class="header-right">
           <span class="user-email" id="user-email"></span>
@@ -350,6 +350,17 @@
 
       <!-- Setup: Credentials -->
       <div class="view" id="view-setup-credentials">
+        <div class="instructions" style="margin-bottom: var(--2);">
+          <h3>How it works</h3>
+          <ol>
+            <li>Go to <a href="https://account.apple.com/account" target="_blank">account.apple.com</a> to create an Apple Account only for Screen Time recovery</li>
+            <li>Store the password here (you won't be able to see it). If you generated the password via a password manager, make sure to delete it from there&mdash;otherwise you could bypass the block</li>
+            <li>Schedule your blocking times</li>
+            <li>When blocking starts, set Screen Time with a random PIN</li>
+            <li>Password is only released in this app when a blocking period ends</li>
+          </ol>
+        </div>
+
         <p class="setup-step">Step 1 of 2</p>
         <h2>Your recovery credentials</h2>
         <p class="setup-description">
@@ -482,14 +493,14 @@
         </div>
 
         <div class="instructions">
-          <h3>What to do now</h3>
+          <h3>Unlocking Screen Time settings</h3>
           <ol>
-            <li>Open System Settings → Screen Time</li>
-            <li>Click "Change Passcode"</li>
-            <li>Click "Forgot Passcode?"</li>
-            <li>Sign in with your recovery Apple ID</li>
-            <li>Use the password above</li>
-            <li>Set a new PIN you DO remember</li>
+            <li>In Screen Time settings, go to Lock Screen Time Settings</li>
+            <li>If it's locked, click Change Passcode…</li>
+            <li>In the passcode prompt, choose Forgot Passcode</li>
+            <li>You'll see Screen Time Passcode Recovery</li>
+            <li>Enter the Apple Account email you created for Screen Time recovery</li>
+            <li>Sign in to that Apple Account using the password above</li>
           </ol>
         </div>
 
@@ -559,6 +570,12 @@
         syncScheduleToWorker,
         getPassword,
       } from "./js/api.js";
+      import {
+        initAuth,
+        isAuthenticated,
+        getCurrentUser,
+        clearAuth,
+      } from "./js/auth.js";
       import { createScheduleEditor } from "./js/schedule.js";
       import {
         isSupported as notificationsSupported,
@@ -577,20 +594,29 @@
       let countdownInterval = null;
       let pollInterval = null;
 
-
-      // Check for vault token (simple auth via localStorage)
-      function checkAuth() {
-        const token = getToken();
-        if (!token) {
+      // Check for Convex auth
+      async function checkAuth() {
+        initAuth();
+        if (!isAuthenticated()) {
           window.location.href = "index.html";
           return false;
         }
-        vaultToken = token;
+
+        // Show user email
+        const user = getCurrentUser();
+        if (user?.email) {
+          document.getElementById("user-email").textContent = user.email;
+        }
+        document.getElementById("logout-btn").classList.remove("hidden");
+
+        // Get vault token (separate from Convex auth)
+        vaultToken = getToken();
         return true;
       }
 
       // Logout handler
       document.getElementById("logout-btn").addEventListener("click", () => {
+        clearAuth();
         localStorage.removeItem("blocker_token");
         window.location.href = "index.html";
       });
@@ -678,8 +704,8 @@
         // Use sessions from state (Convex) or fall back to vault sessions
         const displaySessions = sessions.length > 0 ? sessions : (vault?.sessions || []);
 
-        if (!vault && !vaultToken) {
-          // No vault and no token, show setup
+        if (!vault) {
+          // No vault exists, show setup (even if stale token exists)
           showView("view-setup-credentials");
           return;
         }
@@ -1031,7 +1057,7 @@
 
       // Initial load - check auth first, then load vault
       async function init() {
-        if (checkAuth()) {
+        if (await checkAuth()) {
           await loadVault();
         }
       }

@@ -1,8 +1,5 @@
 /**
- * Convex client setup for vanilla JS
- *
- * Note: @convex-dev/auth is React-only. For vanilla JS, we use
- * a simpler token-based approach with Convex HTTP actions.
+ * Convex client setup for vanilla JS with @convex-dev/auth
  */
 
 import { ConvexClient } from "convex/browser";
@@ -20,10 +17,10 @@ export const convex = new ConvexClient(CONVEX_URL);
 // Auth token storage key
 const AUTH_TOKEN_KEY = "blocker_auth_token";
 
-// Auth state management
+// Auth state
 let currentUser = null;
-let authStateCallbacks = [];
 let isAuthenticatedState = false;
+let authStateCallbacks = [];
 
 function notifyAuthStateChange() {
   authStateCallbacks.forEach((cb) => cb(currentUser));
@@ -43,19 +40,19 @@ export function isAuthenticated() {
   return isAuthenticatedState;
 }
 
-// Get current user info
-export async function getCurrentUser() {
-  if (!isAuthenticated()) return null;
+// Get current user
+export function getCurrentUser() {
   return currentUser;
 }
 
 // Get the Convex site URL for HTTP actions
 function getConvexSiteUrl() {
-  return CONVEX_URL.replace('.cloud', '.site');
+  // Convert .cloud to .site for HTTP endpoints
+  return CONVEX_URL.replace(".cloud", ".site");
 }
 
 // Sign in with Google (OAuth redirect)
-export async function signInWithGoogle() {
+export function signInWithGoogle() {
   const siteUrl = getConvexSiteUrl();
   const redirectUrl = `${window.location.origin}/app.html`;
   window.location.href = `${siteUrl}/api/auth/signin/google?redirectTo=${encodeURIComponent(redirectUrl)}`;
@@ -66,23 +63,19 @@ export async function signInWithEmail(email) {
   const siteUrl = getConvexSiteUrl();
   const redirectUrl = `${window.location.origin}/app.html`;
 
-  console.log('Sending magic link request to:', siteUrl);
-
   const response = await fetch(`${siteUrl}/api/auth/signin/resend`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       email,
       redirectTo: redirectUrl,
     }),
   });
 
-  console.log('Response status:', response.status);
-
   if (!response.ok) {
     const text = await response.text();
-    console.error('Error response:', text);
-    throw new Error('Failed to send magic link');
+    console.error("Magic link error:", text);
+    throw new Error("Failed to send magic link");
   }
 
   return response.json();
@@ -91,39 +84,53 @@ export async function signInWithEmail(email) {
 // Sign out
 export async function signOut() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  convex.setAuth(null);
   isAuthenticatedState = false;
   currentUser = null;
   notifyAuthStateChange();
 }
 
-// Initialize - check auth state on load
+// Initialize auth - check URL for callback token
 export async function initAuth() {
   // Check URL for auth callback token
   const urlParams = new URLSearchParams(window.location.search);
-  const token = urlParams.get('token');
+  const token = urlParams.get("token");
 
   if (token) {
+    // Store the token
     localStorage.setItem(AUTH_TOKEN_KEY, token);
     // Clean up URL
-    window.history.replaceState({}, '', window.location.pathname);
+    window.history.replaceState({}, "", window.location.pathname);
   }
 
-  // Check stored token
+  // Check for stored token
   const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
   if (storedToken) {
     try {
-      // Validate token with Convex
+      // Set auth on the Convex client
+      convex.setAuth(storedToken);
+
+      // Validate by fetching current user
       const { api } = await import("../convex/_generated/api.js");
       currentUser = await convex.query(api.users.current);
+
       if (currentUser) {
         isAuthenticatedState = true;
         notifyAuthStateChange();
+        return true;
+      } else {
+        // Token invalid, clear it
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        convex.setAuth(null);
       }
     } catch (err) {
-      console.error("Token validation failed:", err);
+      console.error("Auth validation failed:", err);
       localStorage.removeItem(AUTH_TOKEN_KEY);
+      convex.setAuth(null);
     }
   }
+
+  return false;
 }
 
 // Query helper
@@ -141,5 +148,4 @@ export function subscribe(queryFn, args, callback) {
   return convex.onUpdate(queryFn, args, callback);
 }
 
-// Export the api for direct use
 export { convex as client };
