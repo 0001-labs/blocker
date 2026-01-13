@@ -1479,8 +1479,10 @@
         const step2Complete = credentialsCheckbox.classList.contains("checked");
         if (step1Complete && step2Complete) {
           goToScheduleBtn.removeAttribute("disabled");
+          goToScheduleBtn.disabled = false;
         } else {
           goToScheduleBtn.setAttribute("disabled", "true");
+          goToScheduleBtn.disabled = true;
         }
       }
 
@@ -1513,6 +1515,9 @@
 
       document.getElementById("apple-id").addEventListener("input", updateCredentialsState);
       document.getElementById("password").addEventListener("input", updateCredentialsState);
+      // Also listen for change events (for autofill/paste that might not trigger input)
+      document.getElementById("apple-id").addEventListener("change", updateCredentialsState);
+      document.getElementById("password").addEventListener("change", updateCredentialsState);
 
       // Format time
       function formatTime(date) {
