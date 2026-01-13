@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blocker</title>
+
+    <!-- DS one -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/ds-one@alpha/DS1/1-root/one.css"
+    />
+    <script type="module">
+      import "https://cdn.jsdelivr.net/npm/ds-one@alpha/dist/ds-one.bundle.min.js";
+    </script>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: var(--2);
+        min-height: 100vh;
+        background: var(--background);
+        color: var(--text-color);
+        font-family: var(--typeface-regular), system-ui, sans-serif;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .hero {
+        padding: var(--4) 0;
+        text-align: center;
+      }
+
+      .logo {
+        width: calc(var(--8));
+        height: calc(var(--8));
+        background: var(--accent-color);
+        border-radius: var(--05);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: var(--025);
+        padding: var(--05);
+        margin: 0 auto var(--2);
+      }
+
+      .logo-cell {
+        background: var(--background);
+        border-radius: var(--025);
+      }
+
+      h1 {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(32px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--1);
+      }
+
+      .subtitle {
+        font-size: calc(18px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin: 0 0 var(--2);
+      }
+
+      .how-it-works {
+        background: var(--slate-light);
+        border-radius: var(--05);
+        padding: var(--2);
+        margin: var(--2) 0;
+        text-align: left;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .how-it-works {
+          background: var(--slate-dark);
+        }
+      }
+
+      .how-it-works h2 {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(16px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--1);
+      }
+
+      .how-it-works ol {
+        margin: 0;
+        padding-left: var(--2);
+      }
+
+      .how-it-works li {
+        margin-bottom: var(--05);
+        line-height: 1.5;
+      }
+
+      .cta {
+        margin-top: var(--2);
+        display: flex;
+        flex-direction: column;
+        gap: var(--1);
+        align-items: center;
+      }
+
+      .auth-divider {
+        color: var(--text-color-dimmed);
+        font-size: calc(12px * var(--sf, 1));
+      }
+
+      .email-form {
+        display: flex;
+        gap: var(--05);
+        width: 100%;
+        max-width: 320px;
+      }
+
+      .email-form input {
+        flex: 1;
+        padding: var(--05) var(--1);
+        border: 1px solid var(--slate-light);
+        border-radius: var(--025);
+        background: var(--background);
+        color: var(--text-color);
+        font-family: inherit;
+        font-size: calc(14px * var(--sf, 1));
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .email-form input {
+          border-color: var(--slate-dark);
+        }
+      }
+
+      .email-form input:focus {
+        outline: none;
+        border-color: var(--accent-color);
+      }
+
+      .auth-message {
+        color: var(--text-color-dimmed);
+        font-size: calc(14px * var(--sf, 1));
+        text-align: center;
+      }
+
+      .auth-message.error {
+        color: var(--tuned-red);
+      }
+
+      .auth-message.success {
+        color: var(--every-green);
+      }
+
+      .loading {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+      .footer {
+        margin-top: var(--4);
+        padding-top: var(--2);
+        border-top: 1px solid var(--slate-light);
+        text-align: center;
+        color: var(--text-color-dimmed);
+        font-size: calc(12px * var(--sf, 1));
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .footer {
+          border-top-color: var(--slate-dark);
+        }
+      }
+
+      .footer a {
+        color: var(--text-color-dimmed);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="hero">
+        <div class="logo">
+          <div class="logo-cell"></div>
+          <div class="logo-cell"></div>
+          <div class="logo-cell"></div>
+          <div class="logo-cell"></div>
+        </div>
+        <h1>Blocker</h1>
+        <p class="subtitle">Make Screen Time actually unbypassable.</p>
+      </div>
+
+      <p>
+        Most people can defeat app blockers. Blocker makes it nearly impossible
+        by holding your recovery password hostage until your blocking period
+        ends.
+      </p>
+
+      <div class="how-it-works">
+        <h2>How it works</h2>
+        <ol>
+          <li>Create a dedicated Apple ID for Screen Time recovery</li>
+          <li>Store the password here (you won't be able to see it)</li>
+          <li>Schedule your blocking times</li>
+          <li>When blocking starts, set Screen Time with a random PIN</li>
+          <li>Password is only released when blocking ends</li>
+        </ol>
+      </div>
+
+      <div class="cta" id="auth-section">
+        <ds-button primary id="get-started">Get started</ds-button>
+      </div>
+
+      <div class="footer">
+        <p>
+          Built by <a href="https://0001.one" target="_blank">0001</a>
+        </p>
+      </div>
+    </div>
+
+    <script type="module">
+      import { getToken, generateVaultToken, setToken } from "./js/api.js";
+
+      // Check if user already has a vault token
+      function init() {
+        const token = getToken();
+        if (token) {
+          // Already set up, go to app
+          window.location.href = "app.html";
+        }
+      }
+
+      // Get started - generate token and go to app
+      document
+        .getElementById("get-started")
+        .addEventListener("click", () => {
+          // Generate a new vault token
+          const token = generateVaultToken();
+          setToken(token);
+          window.location.href = "app.html";
+        });
+
+      init();
+    </script>
+  </body>
+</html>

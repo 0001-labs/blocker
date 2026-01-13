@@ -1,55 +1,97 @@
 # Blocker
 
-macOS app for unbypassable time-blocking using Screen Time with delayed recovery.
+Web app for unbypassable time-blocking using Screen Time with server-controlled credential escrow.
 
 ## Stack
 
-- SwiftUI
-- Swift 5.9+
-- Combine framework
-- UserDefaults/Codable (persistence)
-- Cloudflare Workers (delayed email delivery)
-- Resend (email API)
+**Frontend:**
+- Vanilla JavaScript
+- DS one (design system via CDN)
+- Web Notifications API
+
+**Backend:**
+- Cloudflare Workers (TypeScript)
+- Cloudflare KV (vault storage)
 
 ## Architecture
 
-- **Models:** BlockSession, Schedule, LockState, RuntimeState
-- **Services:** PersistenceService, Scheduler, RecoveryService, NotificationService, BlockingEngine
-- **ViewModels:** AppState
-- **Views:** ScheduleView, RecoveryView, SetupGuideView, WeekGridView
+The server is the escrow agent. It holds your recovery password and only releases it when blocking ends.
 
-## Features
+```
+Frontend (DS one + vanilla JS)
+         │
+         ▼
+Cloudflare Worker
+         │
+         ▼
+Cloudflare KV
+```
 
-1. Weekly schedule with drag-to-create blocking sessions (no overlaps)
-2. Bypass-prevention via dedicated Apple ID for Screen Time recovery
-3. Password stored locally, emailed only when blocking ends
-4. Local notifications for blocking start/end
-5. Setup guide for creating dedicated Apple ID
-6. Auto-persistence with 0.5s debounce
+## API Endpoints
+
+- `POST /vault` — Create or update vault (credentials + schedule)
+- `GET /vault?token=xxx` — Get vault state (password always hidden)
+- `GET /password?token=xxx` — Get password (403 if blocking)
+- `DELETE /vault?token=xxx` — Delete vault (403 if blocking)
+- `GET /status` — Health check
 
 ## How bypass prevention works
 
 1. User creates dedicated Apple ID for Screen Time recovery
-2. User stores Apple ID + password in app (password never viewable)
+2. User stores Apple ID + password in Blocker (password never viewable in app)
 3. When blocking starts: user sets random PIN in Screen Time (mash keys)
-4. During blocking: can't bypass (don't know PIN, password not sent yet)
-5. When blocking ends: Cloudflare Worker emails credentials to user's regular email
-6. User resets Screen Time using "Forgot Passcode?" with the credentials
+4. During blocking: can't bypass (don't know PIN, server refuses to release password)
+5. When blocking ends: server releases password, user resets Screen Time
 
-## Cloudflare Worker
+## Local development
 
-Deployed to: `https://blocker.0001-labs.workers.dev`
+**Frontend:**
+```bash
+bun install
+bun run dev
+```
 
-Endpoints:
-- `POST /schedule` - Schedule recovery email delivery
-- `DELETE /schedule/:id` - Cancel scheduled email
-- `GET /status` - Health check
+**Worker:**
+```bash
+cd worker
+bun install
+bun run dev
+```
 
-Requires `RESEND_API_KEY` secret to be configured.
+## Deployment
 
-## Platform
+**Frontend:**
+```bash
+bun run deploy
+```
 
-macOS 14+ native
+**Worker:**
+```bash
+cd worker
+bun run deploy
+```
+
+## Files
+
+```
+blocker/
+├── index.html            # Landing page
+├── app.html              # Main app
+├── js/
+│   ├── api.js            # API client
+│   ├── schedule.js       # Week grid editor
+│   └── notifications.js
+├── worker/
+│   ├── src/index.ts      # Cloudflare Worker
+│   ├── wrangler.toml     # Worker config
+│   └── package.json
+└── SPEC-WEB.md           # Full specification
+```
+
+## Domain
+
+- Frontend: `blocker.0001.one` (Cloudflare Pages)
+- API: `blocker.0001-labs.workers.dev` (Cloudflare Worker)
 
 ## GitHub
 
