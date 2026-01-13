@@ -52,9 +52,7 @@ export default function SignIn() {
   };
 
   return (
-    <div className="signin-container">
-      <h2>{step === "email" ? "Sign in" : "Enter code"}</h2>
-
+    <>
       {error && (
         <div className="error-message">
           {error}
@@ -63,32 +61,28 @@ export default function SignIn() {
       )}
 
       {step === "email" ? (
-        <form onSubmit={handleSendCode}>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (error) setError(null);
-              }}
-              disabled={loading}
-            />
-          </div>
-          <button type="submit" className="primary-button" disabled={loading}>
+        <form onSubmit={handleSendCode} className="signin-form">
+          <input
+            type="email"
+            id="email"
+            placeholder="Apple Account Email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (error) setError(null);
+            }}
+            disabled={loading}
+          />
+          <button type="submit" disabled={loading}>
             {loading ? "Sending..." : "Send code"}
           </button>
         </form>
       ) : (
-        <form onSubmit={handleVerifyCode}>
+        <form onSubmit={handleVerifyCode} className="signin-form">
           <p className="email-sent-message">
             We sent a code to <strong>{email}</strong>
           </p>
-          <div className="form-group">
-            <label htmlFor="code">Verification code</label>
+          <div className="code-input-group">
             <input
               type="text"
               id="code"
@@ -98,24 +92,24 @@ export default function SignIn() {
               disabled={loading}
               autoFocus
             />
+            <button type="submit" disabled={loading}>
+              {loading ? "Verifying..." : "Verify code"}
+            </button>
+            <button
+              type="button"
+              className="back-link"
+              onClick={() => {
+                setStep("email");
+                setCode("");
+                setError(null);
+              }}
+              disabled={loading}
+            >
+              Use different email
+            </button>
           </div>
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => {
-              setStep("email");
-              setCode("");
-              setError(null);
-            }}
-            disabled={loading}
-          >
-            Use different email
-          </button>
-          <button type="submit" className="primary-button" disabled={loading}>
-            {loading ? "Verifying..." : "Verify code"}
-          </button>
         </form>
       )}
-    </div>
+    </>
   );
 }

@@ -7,6 +7,7 @@
 
 export interface Env {
   VAULTS: KVNamespace;
+  ADMIN_SECRET?: string;
 }
 
 interface BlockSession {
@@ -218,8 +219,10 @@ export default {
 
         return jsonResponse({
           screenTimeAppleId: vault.screenTimeAppleId,
+          hasStoredPassword: Boolean(vault.screenTimePassword),
           sessions: vault.sessions,
           isBlocking: blockingState.isBlocking,
+          activeSessionId: blockingState.activeSession?.id ?? null,
           activeUntil: blockingState.activeUntil?.toISOString() ?? null,
           timeRemaining: blockingState.timeRemaining,
           nextSession: nextSession
@@ -288,6 +291,106 @@ export default {
         await env.VAULTS.delete(`vault:${vault.token}`);
 
         return jsonResponse({ ok: true });
+      }
+
+      // POST /admin/simulate-start?token=xxx - Simulate session start (admin only)
+      if (url.pathname === "/admin/simulate-start" && request.method === "POST") {
+        const adminKey = request.headers.get("X-Admin-Key");
+        const expectedSecret = env.ADMIN_SECRET || "blocker-dev-admin-2026";
+
+        if (adminKey !== expectedSecret) {
+          return errorResponse("Unauthorized", 401);
+        }
+
+        const token = url.searchParams.get("token");
+        if (!token) {
+          return errorResponse("Missing token", 400);
+        }
+
+        const vaultData = await env.VAULTS.get(`vault:${token}`);
+        if (!vaultData) {
+          return errorResponse("Vault not found", 404);
+        }
+
+        const vault: Vault = JSON.parse(vaultData);
+
+        // Create a session that covers "now" for the next 2 hours
+        const now = new Date();
+        const day = now.getDay();
+        const startHour = now.getHours();
+        const startMinute = now.getMinutes();
+        const endHour = (startHour + 2) % 24;
+
+        vault.sessions = [
+          {
+            id: `sim-${Date.now()}`,
+            day,
+            startHour,
+            startMinute,
+            endHour,
+            endMinute: startMinute,
+          },
+        ];
+        vault.updatedAt = new Date().toISOString();
+
+        await env.VAULTS.put(`vault:${token}`, JSON.stringify(vault));
+
+        return jsonResponse({ ok: true, blocking: true, endsAt: `${endHour}:${startMinute.toString().padStart(2, "0")}` });
+      }
+
+      // POST /admin/simulate-end?token=xxx - Simulate session end (admin only)
+      if (url.pathname === "/admin/simulate-end" && request.method === "POST") {
+        const adminKey = request.headers.get("X-Admin-Key");
+        const expectedSecret = env.ADMIN_SECRET || "blocker-dev-admin-2026";
+
+        if (adminKey !== expectedSecret) {
+          return errorResponse("Unauthorized", 401);
+        }
+
+        const token = url.searchParams.get("token");
+        if (!token) {
+          return errorResponse("Missing token", 400);
+        }
+
+        const vaultData = await env.VAULTS.get(`vault:${token}`);
+        if (!vaultData) {
+          return errorResponse("Vault not found", 404);
+        }
+
+        const vault: Vault = JSON.parse(vaultData);
+
+        // Clear all sessions to end blocking
+        vault.sessions = [];
+        vault.updatedAt = new Date().toISOString();
+
+        await env.VAULTS.put(`vault:${token}`, JSON.stringify(vault));
+
+        return jsonResponse({ ok: true, blocking: false });
+      }
+
+      // DELETE /admin/vault?token=xxx - Force delete vault (admin only, bypasses blocking check)
+      if (url.pathname === "/admin/vault" && request.method === "DELETE") {
+        const adminKey = request.headers.get("X-Admin-Key");
+        const expectedSecret = env.ADMIN_SECRET || "blocker-dev-admin-2026";
+
+        if (adminKey !== expectedSecret) {
+          return errorResponse("Unauthorized", 401);
+        }
+
+        const token = url.searchParams.get("token");
+        if (!token) {
+          return errorResponse("Missing token", 400);
+        }
+
+        const vaultData = await env.VAULTS.get(`vault:${token}`);
+        if (!vaultData) {
+          return errorResponse("Vault not found", 404);
+        }
+
+        // Force delete - no blocking check
+        await env.VAULTS.delete(`vault:${token}`);
+
+        return jsonResponse({ ok: true, forced: true });
       }
 
       // GET /status - Health check

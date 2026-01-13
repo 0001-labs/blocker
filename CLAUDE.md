@@ -90,7 +90,7 @@ blocker/
 
 ## Domain
 
-- Frontend: `blocker.0001.one` (Cloudflare Pages)
+- Frontend: `blocker.0001.dev` (Cloudflare Pages)
 - API: `blocker.0001-labs.workers.dev` (Cloudflare Worker)
 
 ## GitHub

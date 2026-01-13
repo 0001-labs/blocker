@@ -64,7 +64,7 @@ function tokenIsFresh(payload) {
   return payload.exp > now;
 }
 
-function getCurrentJwt() {
+export function getCurrentJwt() {
   const key = storageKey(JWT_STORAGE_KEY);
   if (!key) return null;
   return readLocalStorage(key);

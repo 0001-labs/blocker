@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Screen Time Blocker</title>
+
+    <!-- DS one -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/ds-one@alpha/DS1/1-root/one.css"
+    />
+    <script type="module">
+      import "https://cdn.jsdelivr.net/npm/ds-one@alpha/dist/ds-one.bundle.min.js";
+    </script>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      body {
+        margin: 0;
+        padding: var(--2);
+        min-height: 100vh;
+        background: var(--background);
+        color: var(--text-color);
+        font-family: var(--typeface-regular), system-ui, sans-serif;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .page-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(28px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--05);
+      }
+
+      .page-subtitle {
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin: 0 0 var(--2);
+      }
+
+      .loading {
+        text-align: center;
+        padding: var(--4);
+        color: var(--text-color-dimmed);
+      }
+
+      .unauthorized {
+        text-align: center;
+        padding: var(--4);
+      }
+
+      .unauthorized h2 {
+        color: var(--tuned-red);
+        margin: 0 0 var(--1);
+      }
+
+      .section {
+        margin-bottom: var(--2);
+      }
+
+      .section-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(16px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--1);
+        display: flex;
+        align-items: center;
+        gap: var(--05);
+      }
+
+      .user-count {
+        font-weight: normal;
+        color: var(--text-color-dimmed);
+        font-size: calc(14px * var(--sf, 1));
+      }
+
+      .user-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--1);
+      }
+
+      .user-card {
+        background: var(--slate-light);
+        border-radius: var(--05);
+        padding: var(--1);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .user-card {
+          background: var(--slate-dark);
+        }
+      }
+
+      .user-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--05);
+      }
+
+      .user-email {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(14px * var(--sf, 1));
+        font-weight: 500;
+        word-break: break-all;
+      }
+
+      .user-email.admin::after {
+        content: " (you)";
+        color: var(--accent-color);
+        font-weight: normal;
+      }
+
+      .user-meta {
+        font-size: calc(12px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--1);
+      }
+
+      .user-actions {
+        display: flex;
+        gap: var(--05);
+        margin-top: var(--1);
+      }
+
+      .action-btn {
+        padding: var(--025) var(--05);
+        font-size: calc(12px * var(--sf, 1));
+        border: 1px solid var(--slate-light);
+        border-radius: var(--025);
+        background: var(--background);
+        color: var(--text-color);
+        cursor: pointer;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .action-btn {
+          border-color: var(--slate-dark);
+        }
+      }
+
+      .action-btn:hover {
+        background: var(--accent-color);
+        color: var(--white);
+        border-color: var(--accent-color);
+      }
+
+      .action-btn.danger:hover {
+        background: var(--tuned-red);
+        border-color: var(--tuned-red);
+      }
+
+      /* Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: var(--2);
+      }
+
+      .modal-overlay.hidden {
+        display: none;
+      }
+
+      .modal {
+        background: var(--background);
+        border-radius: var(--05);
+        width: 100%;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--1) var(--2);
+        border-bottom: 1px solid var(--slate-light);
+        position: sticky;
+        top: 0;
+        background: var(--background);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .modal-header {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .modal-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(16px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--text-color-dimmed);
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .modal-body {
+        padding: var(--2);
+      }
+
+      .vault-info {
+        display: flex;
+        flex-direction: column;
+        gap: var(--1);
+      }
+
+      .vault-row {
+        display: flex;
+        flex-direction: column;
+        gap: var(--025);
+      }
+
+      .vault-label {
+        font-size: calc(12px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+      }
+
+      .vault-value {
+        font-family: var(--typeface-mono, monospace), monospace;
+        font-size: calc(14px * var(--sf, 1));
+        background: var(--slate-light);
+        padding: var(--05);
+        border-radius: var(--025);
+        word-break: break-all;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .vault-value {
+          background: var(--slate-dark);
+        }
+      }
+
+      .vault-status {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--025);
+        padding: var(--025) var(--05);
+        border-radius: var(--025);
+        font-size: calc(12px * var(--sf, 1));
+      }
+
+      .vault-status.blocking {
+        background: var(--tuned-red);
+        color: var(--white);
+      }
+
+      .vault-status.idle {
+        background: var(--every-green);
+        color: var(--white);
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--025);
+        color: var(--accent-color);
+        text-decoration: none;
+        font-size: calc(14px * var(--sf, 1));
+        margin-bottom: var(--2);
+      }
+
+      .back-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a href="app.html" class="back-link">&larr; Back to app</a>
+
+      <h1 class="page-title">Admin Panel</h1>
+      <p class="page-subtitle">Dev only - manage users and test the app</p>
+
+      <div id="loading" class="loading">Loading...</div>
+
+      <div id="unauthorized" class="unauthorized hidden">
+        <h2>Unauthorized</h2>
+        <p>You don't have access to the admin panel.</p>
+        <a href="app.html">Go back to app</a>
+      </div>
+
+      <div id="admin-content" class="hidden">
+        <div class="section">
+          <h2 class="section-title">
+            Users <span class="user-count" id="user-count">(0)</span>
+          </h2>
+          <div class="user-list" id="user-list"></div>
+        </div>
+      </div>
+
+      <!-- Vault Modal -->
+      <div class="modal-overlay hidden" id="vault-modal">
+        <div class="modal">
+          <div class="modal-header">
+            <h3 class="modal-title">Vault Details</h3>
+            <button class="modal-close" id="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="vault-info" id="vault-info">
+              <p>Loading vault data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initAuth, isAuthenticated, getCurrentJwt } from "./js/auth.js";
+      import { convex } from "./js/convex.js";
+      import { getVault, deleteVault } from "./js/api.js";
+
+      const WORKER_URL = "https://blocker.0001-labs.workers.dev";
+      const ADMIN_SECRET = "blocker-dev-admin-2026";
+
+      // Admin force delete - bypasses blocking check
+      async function forceDeleteVault(token) {
+        const response = await fetch(`${WORKER_URL}/admin/vault?token=${token}`, {
+          method: "DELETE",
+          headers: { "X-Admin-Key": ADMIN_SECRET },
+        });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || `Failed to delete: ${response.status}`);
+        }
+        return response.json();
+      }
+
+      // DOM elements
+      const loadingEl = document.getElementById("loading");
+      const unauthorizedEl = document.getElementById("unauthorized");
+      const adminContentEl = document.getElementById("admin-content");
+      const userListEl = document.getElementById("user-list");
+      const userCountEl = document.getElementById("user-count");
+      const vaultModal = document.getElementById("vault-modal");
+      const vaultInfo = document.getElementById("vault-info");
+
+      // Check auth
+      async function init() {
+        initAuth();
+        if (!isAuthenticated()) {
+          window.location.href = "index.html";
+          return;
+        }
+
+        const jwt = getCurrentJwt();
+        if (jwt) {
+          convex.setAuth(() => jwt);
+        }
+
+        // Check if admin
+        const { api } = await import("./convex/_generated/api.js");
+        const isAdmin = await convex.query(api.admin.isAdmin);
+
+        loadingEl.classList.add("hidden");
+
+        if (!isAdmin) {
+          unauthorizedEl.classList.remove("hidden");
+          return;
+        }
+
+        adminContentEl.classList.remove("hidden");
+        await loadUsers();
+      }
+
+      // Load all users
+      async function loadUsers() {
+        const { api } = await import("./convex/_generated/api.js");
+        const users = await convex.query(api.admin.listUsers);
+
+        userCountEl.textContent = `(${users.length})`;
+        userListEl.innerHTML = "";
+
+        const currentUser = await convex.query(api.users.current);
+
+        for (const user of users) {
+          const card = document.createElement("div");
+          card.className = "user-card";
+
+          const isCurrentUser = user.email === currentUser?.email;
+
+          // Fetch vault data from Worker to get real session count
+          let sessionCount = 0;
+          let isBlocking = false;
+          if (user.vaultToken) {
+            try {
+              const vault = await getVault(user.vaultToken);
+              sessionCount = vault?.sessions?.length || 0;
+              isBlocking = vault?.isBlocking || false;
+            } catch (e) {
+              console.warn("Could not fetch vault for", user.email);
+            }
+          }
+
+          card.innerHTML = `
+            <div class="user-card-header">
+              <div class="user-email ${isCurrentUser ? "admin" : ""}">${user.email}</div>
+            </div>
+            <div class="user-meta">
+              <span>Sessions: ${sessionCount}</span>
+              <span>Status: ${isBlocking ? "🔴 Blocking" : "🟢 Idle"}</span>
+              <span>Has vault: ${user.vaultToken ? "Yes" : "No"}</span>
+              <span>Created: ${new Date(user.createdAt).toLocaleDateString()}</span>
+            </div>
+            <div class="user-actions">
+              ${user.vaultToken ? `<button class="action-btn" data-action="view-vault" data-token="${user.vaultToken}" data-email="${user.email}">View Vault</button>` : ""}
+              ${user.vaultToken && !isBlocking ? `<button class="action-btn" data-action="simulate-start" data-token="${user.vaultToken}" data-email="${user.email}">▶ Start Block</button>` : ""}
+              ${user.vaultToken && isBlocking ? `<button class="action-btn" data-action="simulate-end" data-token="${user.vaultToken}" data-email="${user.email}">⏹ End Block</button>` : ""}
+              <button class="action-btn danger" data-action="delete" data-user-id="${user.id}" data-email="${user.email}">Delete</button>
+            </div>
+          `;
+
+          userListEl.appendChild(card);
+        }
+
+        // Add event listeners
+        document.querySelectorAll("[data-action='view-vault']").forEach((btn) => {
+          btn.addEventListener("click", () => viewVault(btn.dataset.token, btn.dataset.email));
+        });
+
+        document.querySelectorAll("[data-action='simulate-start']").forEach((btn) => {
+          btn.addEventListener("click", () => simulateStart(btn.dataset.token, btn.dataset.email));
+        });
+
+        document.querySelectorAll("[data-action='simulate-end']").forEach((btn) => {
+          btn.addEventListener("click", () => simulateEnd(btn.dataset.token, btn.dataset.email));
+        });
+
+        document.querySelectorAll("[data-action='delete']").forEach((btn) => {
+          btn.addEventListener("click", () => deleteSchedule(btn.dataset.userId, btn.dataset.email));
+        });
+      }
+
+      // Simulate session start
+      async function simulateStart(token, email) {
+        try {
+          const response = await fetch(`${WORKER_URL}/admin/simulate-start?token=${token}`, {
+            method: "POST",
+            headers: { "X-Admin-Key": ADMIN_SECRET },
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || `Failed: ${response.status}`);
+          }
+
+          const result = await response.json();
+
+          // Show Screen Time instructions modal
+          vaultModal.classList.remove("hidden");
+          vaultInfo.innerHTML = `
+            <h3 style="margin: 0 0 var(--1); color: var(--tuned-red);">🔒 Blocking Started for ${email}</h3>
+            <p style="margin-bottom: var(--1);">Ends at: <strong>${result.endsAt}</strong></p>
+
+            <h4 style="margin: var(--1) 0 var(--05);">Now lock Screen Time:</h4>
+            <ol style="margin: 0; padding-left: var(--1); line-height: 1.8;">
+              <li>Open <strong>System Settings</strong> → <strong>Screen Time</strong></li>
+              <li>Click <strong>Lock Screen Time Settings</strong></li>
+              <li>Enter a <strong>random PIN</strong> (mash the keyboard)</li>
+              <li>Click <strong>OK</strong> without memorizing it</li>
+            </ol>
+
+            <p style="margin-top: var(--1); padding: var(--05); background: var(--slate-light); border-radius: var(--025); font-size: 12px;">
+              💡 The PIN is now unknown to everyone. The only way to unlock is via the recovery Apple ID - which is blocked until the session ends.
+            </p>
+          `;
+
+          await loadUsers();
+        } catch (err) {
+          alert(`Error: ${err.message}`);
+        }
+      }
+
+      // Simulate session end
+      async function simulateEnd(token, email) {
+        try {
+          const response = await fetch(`${WORKER_URL}/admin/simulate-end?token=${token}`, {
+            method: "POST",
+            headers: { "X-Admin-Key": ADMIN_SECRET },
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || `Failed: ${response.status}`);
+          }
+
+          alert(`Session ended for ${email}. User can now access their password.`);
+          await loadUsers();
+        } catch (err) {
+          alert(`Error: ${err.message}`);
+        }
+      }
+
+      // View vault details
+      async function viewVault(token, email) {
+        vaultModal.classList.remove("hidden");
+        vaultInfo.innerHTML = "<p>Loading vault data...</p>";
+
+        try {
+          const vault = await getVault(token);
+
+          if (!vault) {
+            vaultInfo.innerHTML = "<p>No vault data found</p>";
+            return;
+          }
+
+          vaultInfo.innerHTML = `
+            <div class="vault-row">
+              <span class="vault-label">User</span>
+              <span class="vault-value">${email}</span>
+            </div>
+            <div class="vault-row">
+              <span class="vault-label">Vault Token</span>
+              <span class="vault-value">${token}</span>
+            </div>
+            <div class="vault-row">
+              <span class="vault-label">Apple ID</span>
+              <span class="vault-value">${vault.screenTimeAppleId || "Not set"}</span>
+            </div>
+            <div class="vault-row">
+              <span class="vault-label">Has Password</span>
+              <span class="vault-value">${vault.hasStoredPassword ? "Yes" : "No"}</span>
+            </div>
+            <div class="vault-row">
+              <span class="vault-label">Status</span>
+              <span class="vault-status ${vault.isBlocking ? "blocking" : "idle"}">
+                ${vault.isBlocking ? "Blocking" : "Not blocking"}
+              </span>
+            </div>
+            ${vault.isBlocking ? `
+            <div class="vault-row">
+              <span class="vault-label">Active Until</span>
+              <span class="vault-value">${new Date(vault.activeUntil).toLocaleString()}</span>
+            </div>
+            ` : ""}
+            <div class="vault-row">
+              <span class="vault-label">Sessions</span>
+              <span class="vault-value">${vault.sessions?.length || 0} session(s)</span>
+            </div>
+            ${vault.nextSession ? `
+            <div class="vault-row">
+              <span class="vault-label">Next Session</span>
+              <span class="vault-value">${new Date(vault.nextSession.startsAt).toLocaleString()}</span>
+            </div>
+            ` : ""}
+          `;
+        } catch (err) {
+          vaultInfo.innerHTML = `<p>Error loading vault: ${err.message}</p>`;
+        }
+      }
+
+      // Delete user schedule
+      async function deleteSchedule(userId, email) {
+        if (!confirm(`Delete ALL data for ${email}? This will delete their vault AND schedule (even during blocking).`)) {
+          return;
+        }
+
+        try {
+          const { api } = await import("./convex/_generated/api.js");
+
+          // First get the vault token
+          const vaultToken = await convex.query(api.admin.getUserVaultToken, { userId });
+
+          // Force delete from Worker (bypasses blocking check)
+          let workerDeleted = false;
+          if (vaultToken) {
+            try {
+              await forceDeleteVault(vaultToken);
+              workerDeleted = true;
+              console.log("Force deleted vault from Worker");
+            } catch (workerErr) {
+              console.warn("Could not delete from Worker:", workerErr);
+            }
+          }
+
+          // Delete from Convex (schedule record)
+          const result = await convex.mutation(api.admin.deleteUserSchedule, { userId });
+
+          if (result.deleted || workerDeleted) {
+            alert(`Data deleted for ${email}`);
+            await loadUsers();
+          } else {
+            alert("No data found for this user.");
+          }
+        } catch (err) {
+          alert(`Error: ${err.message}`);
+        }
+      }
+
+      // Modal close
+      document.getElementById("modal-close").addEventListener("click", () => {
+        vaultModal.classList.add("hidden");
+      });
+
+      vaultModal.addEventListener("click", (e) => {
+        if (e.target === vaultModal) {
+          vaultModal.classList.add("hidden");
+        }
+      });
+
+      init();
+    </script>
+  </body>
+</html>

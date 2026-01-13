@@ -1,107 +1,386 @@
 /**
- * Week grid schedule editor
+ * Week grid schedule editor - Figma design implementation
  */
 
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const START_HOUR = 6;
-const END_HOUR = 23;
+const DEFAULT_START_HOUR = 7;
+const DEFAULT_END_HOUR = 17; // 5 PM
+const HOUR_HEIGHT = 25; // Height of each hour row in px
+const MAX_WEEKS_FUTURE = 4; // Maximum weeks into the future
 
-export function createScheduleEditor(container, sessions = [], onChange) {
+export function createScheduleEditor(container, sessions = [], onChange, options = {}) {
   // Ensure all sessions have recurring property
   let currentSessions = sessions.map(s => ({ ...s, recurring: s.recurring ?? false }));
   let isDragging = false;
   let dragStart = null;
   let dragCurrent = null;
+  let weekOffset = 0; // 0 = current week
+
+  // Options for locked sessions (ongoing blocks)
+  const { lockedSessionId = null } = options;
+
+  // Calendar preferences (defaults)
+  let preferences = {
+    show24Hours: false,
+    firstDayOfWeek: 1, // 0=Sun, 1=Mon, etc.
+  };
+
+  // Get effective hour range based on preferences
+  function getHourRange() {
+    if (preferences.show24Hours) {
+      return { start: 0, end: 23 };
+    }
+    return { start: DEFAULT_START_HOUR, end: DEFAULT_END_HOUR };
+  }
+
+  // Get the dates for the current week view
+  function getWeekDates() {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 = Sunday
+    const firstDay = preferences.firstDayOfWeek;
+
+    // Calculate days to subtract to get to the first day of week
+    let daysToSubtract = currentDay - firstDay;
+    if (daysToSubtract < 0) daysToSubtract += 7;
+
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - daysToSubtract + (weekOffset * 7));
+
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  }
+
+  // Format hour for display
+  function formatHour(hour) {
+    if (hour === 0) return '12 AM';
+    if (hour === 12) return '12 PM';
+    if (hour < 12) return `${hour} AM`;
+    return `${hour - 12} PM`;
+  }
+
+  // Format time range for session display (e.g., "9:00–11:30")
+  function formatTimeRange(startHour, startMinute, endHour, endMinute) {
+    const formatPart = (h, m) => `${h}:${m.toString().padStart(2, '0')}`;
+    return `${formatPart(startHour, startMinute)}–${formatPart(endHour, endMinute)}`;
+  }
+
+  // Format day header (e.g., "Mon 12")
+  function formatDayNumber(date) {
+    return date.getDate();
+  }
+
+  // Get short day name
+  function getDayName(date) {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[date.getDay()];
+  }
+
+  // Get short month name
+  function getMonthName(date) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[date.getMonth()];
+  }
+
+  // Convert date's day of week to our 0-6 index (Mon=0, Sun=6)
+  function getDayIndex(date) {
+    const day = date.getDay();
+    return day === 0 ? 6 : day - 1; // Convert Sun=0 to Sun=6, Mon=1 to Mon=0
+  }
+
+  // Calculate position for a time within the grid
+  function getTimePosition(hour, minute = 0) {
+    const { start } = getHourRange();
+    const hourOffset = hour - start;
+    const minuteOffset = minute / 60;
+    return (hourOffset + minuteOffset) * HOUR_HEIGHT;
+  }
+
+  // Get current time position (for "now" line)
+  function getNowPosition() {
+    const now = new Date();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    const { start, end } = getHourRange();
+
+    if (hour < start || hour > end) return null;
+    return getTimePosition(hour, minute);
+  }
+
+  // Check if today is in current week view
+  function isTodayInView() {
+    const weekDates = getWeekDates();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return weekDates.some(d => {
+      const date = new Date(d);
+      date.setHours(0, 0, 0, 0);
+      return date.getTime() === today.getTime();
+    });
+  }
+
+  // Get today's column index (0-6) if in view
+  function getTodayColumnIndex() {
+    const weekDates = getWeekDates();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < weekDates.length; i++) {
+      const date = new Date(weekDates[i]);
+      date.setHours(0, 0, 0, 0);
+      if (date.getTime() === today.getTime()) {
+        return i;
+      }
+    }
+    return -1;
+  }
 
   function render() {
     container.innerHTML = "";
     container.className = "schedule-editor";
 
-    // Create grid
-    const grid = document.createElement("div");
-    grid.className = "schedule-grid";
+    const weekDates = getWeekDates();
 
-    // Header row (days)
-    const headerRow = document.createElement("div");
-    headerRow.className = "schedule-header";
-    headerRow.innerHTML = '<div class="schedule-time-label"></div>';
-    for (const day of DAYS) {
-      headerRow.innerHTML += `<div class="schedule-day-label">${day}</div>`;
+    // Create the card container
+    const card = document.createElement("div");
+    card.className = "schedule-card";
+
+    // Info bar at top
+    const infoBar = document.createElement("div");
+    infoBar.className = "schedule-info-bar";
+
+    // Left side: next session text
+    const infoLeft = document.createElement("div");
+    infoLeft.className = "schedule-info-left";
+
+    const nextSessionText = document.createElement("span");
+    nextSessionText.className = "schedule-next-session";
+    nextSessionText.id = "schedule-next-session-text";
+    nextSessionText.textContent = currentSessions.length > 0 ? "Next session begins..." : "No sessions scheduled";
+
+    infoLeft.appendChild(nextSessionText);
+
+    // Right side: navigation arrows
+    const infoRight = document.createElement("div");
+    infoRight.className = "schedule-info-right";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.className = "schedule-nav-btn";
+    prevBtn.innerHTML = "‹";
+    prevBtn.setAttribute("aria-label", "Previous week");
+    // Disable if at current week (can't go to past)
+    if (weekOffset <= 0) {
+      prevBtn.disabled = true;
+      prevBtn.classList.add("schedule-nav-btn-disabled");
     }
-    grid.appendChild(headerRow);
+    prevBtn.addEventListener("click", () => {
+      if (weekOffset > 0) {
+        weekOffset--;
+        render();
+      }
+    });
 
-    // Hour rows
-    for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
-      const row = document.createElement("div");
-      row.className = "schedule-row";
+    const nextBtn = document.createElement("button");
+    nextBtn.className = "schedule-nav-btn";
+    nextBtn.innerHTML = "›";
+    nextBtn.setAttribute("aria-label", "Next week");
+    // Disable if at max future weeks
+    if (weekOffset >= MAX_WEEKS_FUTURE) {
+      nextBtn.disabled = true;
+      nextBtn.classList.add("schedule-nav-btn-disabled");
+    }
+    nextBtn.addEventListener("click", () => {
+      if (weekOffset < MAX_WEEKS_FUTURE) {
+        weekOffset++;
+        render();
+      }
+    });
 
-      // Time label
+    infoRight.appendChild(prevBtn);
+    infoRight.appendChild(nextBtn);
+
+    infoBar.appendChild(infoLeft);
+    infoBar.appendChild(infoRight);
+    card.appendChild(infoBar);
+
+    // Create grid container
+    const gridContainer = document.createElement("div");
+    gridContainer.className = "schedule-grid-container";
+
+    // Time labels column
+    const timeColumn = document.createElement("div");
+    timeColumn.className = "schedule-time-column";
+
+    // Empty cell for header alignment
+    const timeHeader = document.createElement("div");
+    timeHeader.className = "schedule-time-header";
+    timeColumn.appendChild(timeHeader);
+
+    // Time labels
+    const { start: startHour, end: endHour } = getHourRange();
+    for (let hour = startHour; hour <= endHour; hour++) {
       const timeLabel = document.createElement("div");
       timeLabel.className = "schedule-time-label";
-      timeLabel.textContent =
-        hour === 0
-          ? "12am"
-          : hour < 12
-            ? `${hour}am`
-            : hour === 12
-              ? "12pm"
-              : `${hour - 12}pm`;
-      row.appendChild(timeLabel);
+      timeLabel.textContent = formatHour(hour);
+      timeColumn.appendChild(timeLabel);
+    }
+    gridContainer.appendChild(timeColumn);
 
-      // Day cells
-      for (let day = 0; day < 7; day++) {
+    // Day columns
+    for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+      const date = weekDates[dayIdx];
+      const dayColumn = document.createElement("div");
+      dayColumn.className = "schedule-day-column";
+
+      // Day header with "Mon 12 Jan" format
+      const dayHeader = document.createElement("div");
+      dayHeader.className = "schedule-day-header";
+
+      const dayText = document.createElement("span");
+      dayText.textContent = `${getDayName(date)} ${formatDayNumber(date)} `;
+
+      const monthText = document.createElement("span");
+      monthText.className = "schedule-month";
+      monthText.textContent = getMonthName(date);
+
+      dayHeader.appendChild(dayText);
+      dayHeader.appendChild(monthText);
+      dayColumn.appendChild(dayHeader);
+
+      // Grid cells container (for relative positioning of blocks)
+      const cellsContainer = document.createElement("div");
+      cellsContainer.className = "schedule-cells-container";
+      cellsContainer.dataset.day = dayIdx;
+
+      // Hour cells
+      for (let hour = startHour; hour <= endHour; hour++) {
         const cell = document.createElement("div");
         cell.className = "schedule-cell";
-        cell.dataset.day = day;
+        cell.dataset.day = dayIdx;
         cell.dataset.hour = hour;
-
-        // Check if this cell is in a session
-        const session = currentSessions.find(
-          (s) =>
-            s.day === day &&
-            hour >= s.startHour &&
-            (hour < s.endHour || (hour === s.endHour && s.endMinute > 0))
-        );
-
-        if (session) {
-          cell.classList.add("schedule-cell-active");
-          if (session.recurring) {
-            cell.classList.add("schedule-cell-recurring");
-          }
-          cell.dataset.sessionId = session.id;
-        }
-
-        // Check if this cell is in the current drag selection
-        if (isDragging && dragStart && dragCurrent) {
-          const minDay = Math.min(dragStart.day, dragCurrent.day);
-          const maxDay = Math.max(dragStart.day, dragCurrent.day);
-          const minHour = Math.min(dragStart.hour, dragCurrent.hour);
-          const maxHour = Math.max(dragStart.hour, dragCurrent.hour);
-
-          if (day >= minDay && day <= maxDay && hour >= minHour && hour <= maxHour) {
-            cell.classList.add("schedule-cell-dragging");
-          }
-        }
-
-        row.appendChild(cell);
+        cellsContainer.appendChild(cell);
       }
 
-      grid.appendChild(row);
+      // Add session blocks as overlays
+      // Use the actual date's day of week (0=Sun, 1=Mon, etc.)
+      const standardDay = date.getDay();
+      const daySessions = currentSessions.filter(s => s.day === standardDay);
+
+      daySessions.forEach(session => {
+        // Only show if session overlaps with visible hours
+        if (session.endHour <= startHour || session.startHour > endHour) return;
+
+        const blockTop = getTimePosition(
+          Math.max(session.startHour, startHour),
+          session.startHour >= startHour ? session.startMinute : 0
+        );
+        const blockBottom = getTimePosition(
+          Math.min(session.endHour, endHour + 1),
+          session.endHour <= endHour ? session.endMinute : 0
+        );
+        const blockHeight = blockBottom - blockTop;
+
+        if (blockHeight <= 0) return;
+
+        const block = document.createElement("div");
+        block.className = "schedule-block";
+        if (session.recurring) {
+          block.classList.add("schedule-block-recurring");
+        }
+        if (session.id === lockedSessionId) {
+          block.classList.add("schedule-block-locked");
+        }
+        block.dataset.sessionId = session.id;
+        block.style.top = `${blockTop}px`;
+        block.style.height = `${blockHeight}px`;
+
+        // Block content
+        const blockContent = document.createElement("div");
+        blockContent.className = "schedule-block-content";
+
+        const blockHeader = document.createElement("div");
+        blockHeader.className = "schedule-block-header";
+
+        const blockTitle = document.createElement("span");
+        blockTitle.className = "schedule-block-title";
+        blockTitle.textContent = session.title || "Blocked";
+
+        blockHeader.appendChild(blockTitle);
+
+        // Recurring icon
+        if (session.recurring) {
+          const repeatIcon = document.createElement("span");
+          repeatIcon.className = "schedule-block-repeat";
+          repeatIcon.textContent = "↻";
+          blockHeader.appendChild(repeatIcon);
+        }
+
+        const blockTime = document.createElement("span");
+        blockTime.className = "schedule-block-time";
+        blockTime.textContent = formatTimeRange(
+          session.startHour, session.startMinute,
+          session.endHour, session.endMinute
+        );
+
+        blockContent.appendChild(blockHeader);
+        blockContent.appendChild(blockTime);
+        block.appendChild(blockContent);
+
+        // Click to toggle recurring
+        block.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (session.id === lockedSessionId) return;
+          session.recurring = !session.recurring;
+          onChange(currentSessions);
+          render();
+        });
+
+        // Right-click to delete
+        block.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (session.id === lockedSessionId) return;
+          currentSessions = currentSessions.filter(s => s.id !== session.id);
+          onChange(currentSessions);
+          render();
+        });
+
+        cellsContainer.appendChild(block);
+      });
+
+      // Add "now" line if this is today's column
+      const todayIdx = getTodayColumnIndex();
+      if (dayIdx === todayIdx && isTodayInView()) {
+        const nowPos = getNowPosition();
+        if (nowPos !== null) {
+          const nowLine = document.createElement("div");
+          nowLine.className = "schedule-now-line";
+          nowLine.style.top = `${nowPos}px`;
+          cellsContainer.appendChild(nowLine);
+        }
+      }
+
+      dayColumn.appendChild(cellsContainer);
+      gridContainer.appendChild(dayColumn);
     }
 
-    container.appendChild(grid);
+    card.appendChild(gridContainer);
+    container.appendChild(card);
 
-    // Add event listeners
-    grid.addEventListener("mousedown", handleMouseDown);
-    grid.addEventListener("mousemove", handleMouseMove);
-    grid.addEventListener("mouseup", handleMouseUp);
-    grid.addEventListener("mouseleave", handleMouseUp);
-    grid.addEventListener("contextmenu", handleContextMenu);
+    // Add event listeners to grid container
+    gridContainer.addEventListener("mousedown", handleMouseDown);
+    gridContainer.addEventListener("mousemove", handleMouseMove);
+    gridContainer.addEventListener("mouseup", handleMouseUp);
+    gridContainer.addEventListener("mouseleave", handleMouseUp);
 
     // Touch support
-    grid.addEventListener("touchstart", handleTouchStart, { passive: false });
-    grid.addEventListener("touchmove", handleTouchMove, { passive: false });
-    grid.addEventListener("touchend", handleTouchEnd);
+    gridContainer.addEventListener("touchstart", handleTouchStart, { passive: false });
+    gridContainer.addEventListener("touchmove", handleTouchMove, { passive: false });
+    gridContainer.addEventListener("touchend", handleTouchEnd);
   }
 
   function getCellFromEvent(e) {
@@ -110,30 +389,24 @@ export function createScheduleEditor(container, sessions = [], onChange) {
     return {
       day: parseInt(cell.dataset.day),
       hour: parseInt(cell.dataset.hour),
-      sessionId: cell.dataset.sessionId,
     };
   }
 
   function handleMouseDown(e) {
     if (e.button !== 0) return; // Left click only
+
+    // Ignore clicks on blocks (handled by block click handlers)
+    if (e.target.closest(".schedule-block")) return;
+
     const cell = getCellFromEvent(e);
     if (!cell) return;
-
-    // If clicking on an existing session, toggle recurring
-    if (cell.sessionId) {
-      const session = currentSessions.find(s => s.id === cell.sessionId);
-      if (session) {
-        session.recurring = !session.recurring;
-        onChange(currentSessions);
-        render();
-      }
-      return;
-    }
 
     isDragging = true;
     dragStart = cell;
     dragCurrent = cell;
-    render();
+
+    // Add dragging visual
+    updateDragVisual();
   }
 
   function handleMouseMove(e) {
@@ -145,58 +418,97 @@ export function createScheduleEditor(container, sessions = [], onChange) {
     if (cell.day !== dragStart.day) return;
 
     dragCurrent = cell;
-    render();
+    updateDragVisual();
+  }
+
+  function updateDragVisual() {
+    // Remove existing drag visual
+    document.querySelectorAll(".schedule-cell-dragging").forEach(el => {
+      el.classList.remove("schedule-cell-dragging");
+    });
+
+    if (!isDragging || !dragStart || !dragCurrent) return;
+
+    const minHour = Math.min(dragStart.hour, dragCurrent.hour);
+    const maxHour = Math.max(dragStart.hour, dragCurrent.hour);
+
+    document.querySelectorAll(`.schedule-cell[data-day="${dragStart.day}"]`).forEach(cell => {
+      const hour = parseInt(cell.dataset.hour);
+      if (hour >= minHour && hour <= maxHour) {
+        cell.classList.add("schedule-cell-dragging");
+      }
+    });
   }
 
   function handleMouseUp(e) {
     if (!isDragging) return;
 
+    // Remove drag visual
+    document.querySelectorAll(".schedule-cell-dragging").forEach(el => {
+      el.classList.remove("schedule-cell-dragging");
+    });
+
     if (dragStart && dragCurrent && dragStart.day === dragCurrent.day) {
       const minHour = Math.min(dragStart.hour, dragCurrent.hour);
       const maxHour = Math.max(dragStart.hour, dragCurrent.hour);
 
+      // Get the standard day from the actual date
+      const weekDates = getWeekDates();
+      const standardDay = weekDates[dragStart.day].getDay();
+
       // Check for overlaps
       const overlaps = currentSessions.some(
         (s) =>
-          s.day === dragStart.day &&
+          s.day === standardDay &&
           !(maxHour < s.startHour || minHour >= s.endHour)
       );
 
       if (!overlaps && maxHour >= minHour) {
         const newSession = {
           id: crypto.randomUUID(),
-          day: dragStart.day,
+          day: standardDay,
           startHour: minHour,
           startMinute: 0,
           endHour: maxHour + 1,
           endMinute: 0,
           recurring: false,
+          title: "Blocked",
         };
 
         currentSessions.push(newSession);
         onChange(currentSessions);
+        render();
       }
     }
 
     isDragging = false;
     dragStart = null;
     dragCurrent = null;
-    render();
-  }
-
-  function handleContextMenu(e) {
-    e.preventDefault();
-    const cell = getCellFromEvent(e);
-    if (!cell || !cell.sessionId) return;
-
-    // Delete session
-    currentSessions = currentSessions.filter((s) => s.id !== cell.sessionId);
-    onChange(currentSessions);
-    render();
   }
 
   // Touch handlers
+  let longPressTimer = null;
+  let touchedBlock = null;
+
   function handleTouchStart(e) {
+    const block = e.target.closest(".schedule-block");
+    if (block) {
+      e.preventDefault();
+      touchedBlock = block;
+      const sessionId = block.dataset.sessionId;
+
+      if (sessionId === lockedSessionId) return;
+
+      // Long press to delete
+      longPressTimer = setTimeout(() => {
+        currentSessions = currentSessions.filter(s => s.id !== sessionId);
+        onChange(currentSessions);
+        render();
+        touchedBlock = null;
+      }, 500);
+      return;
+    }
+
     e.preventDefault();
     const touch = e.touches[0];
     const cell = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -205,29 +517,21 @@ export function createScheduleEditor(container, sessions = [], onChange) {
     const cellData = {
       day: parseInt(cell.dataset.day),
       hour: parseInt(cell.dataset.hour),
-      sessionId: cell.dataset.sessionId,
     };
-
-    if (cellData.sessionId) {
-      // Short tap to toggle recurring, long press to delete
-      cell.dataset.tapStart = Date.now();
-      cell.dataset.longPressTimer = setTimeout(() => {
-        currentSessions = currentSessions.filter(
-          (s) => s.id !== cellData.sessionId
-        );
-        onChange(currentSessions);
-        render();
-      }, 500);
-      return;
-    }
 
     isDragging = true;
     dragStart = cellData;
     dragCurrent = cellData;
-    render();
+    updateDragVisual();
   }
 
   function handleTouchMove(e) {
+    // Cancel long press if moving
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+
     e.preventDefault();
     if (!isDragging) return;
 
@@ -243,27 +547,29 @@ export function createScheduleEditor(container, sessions = [], onChange) {
     if (cellData.day !== dragStart.day) return;
 
     dragCurrent = cellData;
-    render();
+    updateDragVisual();
   }
 
   function handleTouchEnd(e) {
-    // Clear any long press timer and check for short tap to toggle recurring
-    document.querySelectorAll("[data-long-press-timer]").forEach((el) => {
-      clearTimeout(el.dataset.longPressTimer);
+    // Handle short tap on block to toggle recurring
+    if (touchedBlock && longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
 
-      // If tap was short (< 500ms), toggle recurring
-      const tapStart = parseInt(el.dataset.tapStart);
-      const tapDuration = Date.now() - tapStart;
-      if (tapDuration < 500 && el.dataset.sessionId) {
-        const session = currentSessions.find(s => s.id === el.dataset.sessionId);
+      const sessionId = touchedBlock.dataset.sessionId;
+      if (sessionId && sessionId !== lockedSessionId) {
+        const session = currentSessions.find(s => s.id === sessionId);
         if (session) {
           session.recurring = !session.recurring;
           onChange(currentSessions);
           render();
         }
       }
-    });
+      touchedBlock = null;
+      return;
+    }
 
+    touchedBlock = null;
     handleMouseUp(e);
   }
 
@@ -277,10 +583,20 @@ export function createScheduleEditor(container, sessions = [], onChange) {
     return [...currentSessions];
   }
 
+  function setNextSessionText(text) {
+    const el = document.getElementById("schedule-next-session-text");
+    if (el) el.textContent = text;
+  }
+
+  function setPreferences(newPrefs) {
+    preferences = { ...preferences, ...newPrefs };
+    render();
+  }
+
   // Initial render
   render();
 
-  return { setSessions, getSessions, render };
+  return { setSessions, getSessions, render, setNextSessionText, setPreferences };
 }
 
 // CSS for the schedule editor (injected once)
@@ -290,91 +606,243 @@ if (!document.getElementById("schedule-editor-styles")) {
   style.textContent = `
     .schedule-editor {
       width: 100%;
-      overflow-x: auto;
     }
 
-    .schedule-grid {
+    .schedule-card {
+      background: #f6f6f6;
+      border-radius: 5px;
+      padding: 20px 15px;
       display: flex;
       flex-direction: column;
-      min-width: 320px;
+      gap: 20px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .schedule-card {
+        background: var(--slate-dark, #2a2a2a);
+      }
+    }
+
+    .schedule-info-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .schedule-info-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .schedule-info-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding-right: 5px;
+    }
+
+    .schedule-next-session {
+      font-size: 14px;
+      color: var(--text-color, #000);
+    }
+
+    .schedule-nav-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--text-color, #000);
+      line-height: 1;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .schedule-nav-btn:hover:not(:disabled) {
+      opacity: 0.7;
+    }
+
+    .schedule-nav-btn-disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .schedule-grid-container {
+      display: flex;
+      width: 100%;
       user-select: none;
     }
 
-    .schedule-header,
-    .schedule-row {
-      display: grid;
-      grid-template-columns: 48px repeat(7, 1fr);
-      gap: 2px;
+    .schedule-time-column {
+      display: flex;
+      flex-direction: column;
+      width: 46px;
+      flex-shrink: 0;
+      margin-left: -10px;
     }
 
-    .schedule-header {
-      margin-bottom: 4px;
-    }
-
-    .schedule-day-label {
-      text-align: center;
-      font-size: calc(12px * var(--sf, 1));
-      color: var(--text-color-dimmed);
-      padding: var(--025) 0;
+    .schedule-time-header {
+      height: 17px;
     }
 
     .schedule-time-label {
-      font-size: calc(10px * var(--sf, 1));
-      color: var(--text-color-dimmed);
-      text-align: right;
-      padding-right: var(--025);
-      line-height: 24px;
+      height: ${HOUR_HEIGHT}px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      font-size: 10px;
+      color: var(--text-color, #000);
+    }
+
+    .schedule-day-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .schedule-day-header {
+      height: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--text-color, #000);
+      white-space: nowrap;
+    }
+
+    .schedule-month {
+      color: #868686;
+    }
+
+    .schedule-cells-container {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .schedule-cell {
-      height: 24px;
-      background: var(--slate-light);
-      border-radius: 2px;
+      height: ${HOUR_HEIGHT}px;
+      border: 0.2px solid #424242;
       cursor: pointer;
       transition: background-color 0.1s;
     }
 
+    .schedule-cell:hover {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
     @media (prefers-color-scheme: dark) {
       .schedule-cell {
-        background: var(--slate-dark);
+        border-color: #555;
       }
-    }
-
-    .schedule-cell:hover {
-      background: var(--light-grey);
-    }
-
-    @media (prefers-color-scheme: dark) {
       .schedule-cell:hover {
-        background: var(--slate);
+        background: rgba(255, 255, 255, 0.05);
       }
-    }
-
-    .schedule-cell-active {
-      background: repeating-linear-gradient(
-        45deg,
-        var(--accent-color),
-        var(--accent-color) 4px,
-        transparent 4px,
-        transparent 8px
-      ) !important;
-      cursor: pointer;
-    }
-
-    .schedule-cell-active.schedule-cell-recurring {
-      background: var(--accent-color) !important;
     }
 
     .schedule-cell-dragging {
-      background: var(--accent-color) !important;
-      opacity: 0.6;
+      background: rgba(153, 255, 115, 0.3) !important;
     }
 
-    .schedule-cell-active::after {
-      content: "";
-      display: block;
-      width: 100%;
-      height: 100%;
+    /* Session blocks */
+    .schedule-block {
+      position: absolute;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 0.2px solid #000;
+      border-radius: 5px;
+      padding: 4px;
+      cursor: pointer;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .schedule-block:hover {
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .schedule-block-recurring {
+      background: linear-gradient(
+        90deg,
+        rgba(153, 255, 115, 0.15) 0%,
+        rgba(153, 255, 115, 0.15) 100%
+      ), #fff;
+    }
+
+    .schedule-block-locked {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: #ef4444;
+      cursor: not-allowed;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .schedule-block {
+        background: var(--slate-dark, #2a2a2a);
+        border-color: #555;
+      }
+      .schedule-block-recurring {
+        background: linear-gradient(
+          90deg,
+          rgba(153, 255, 115, 0.2) 0%,
+          rgba(153, 255, 115, 0.2) 100%
+        ), var(--slate-dark, #2a2a2a);
+      }
+    }
+
+    .schedule-block-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .schedule-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .schedule-block-title {
+      font-size: 10px;
+      color: var(--text-color, #000);
+      font-weight: 400;
+    }
+
+    .schedule-block-repeat {
+      font-size: 8px;
+      color: var(--text-color, #000);
+      opacity: 0.7;
+    }
+
+    .schedule-block-time {
+      font-size: 6px;
+      color: #565656;
+    }
+
+    /* Now line */
+    .schedule-now-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 0;
+      border-top: 1px solid #ef4444;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .schedule-now-line::before {
+      content: '';
+      position: absolute;
+      left: -4px;
+      top: -4px;
+      width: 7px;
+      height: 7px;
+      background: #ef4444;
+      border-radius: 50%;
     }
   `;
   document.head.appendChild(style);

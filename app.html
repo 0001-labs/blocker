@@ -19,6 +19,10 @@
         box-sizing: border-box;
       }
 
+      .hidden {
+        display: none !important;
+      }
+
       body {
         margin: 0;
         padding: var(--2);
@@ -33,53 +37,188 @@
         margin: 0 auto;
       }
 
-      /* Header */
-      .header {
+      /* Navigation */
+      .nav {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
+        gap: var(--05);
         margin-bottom: var(--2);
+        border-bottom: 1px solid var(--slate-light);
+        padding-bottom: var(--05);
       }
 
-      .header-left {
+      @media (prefers-color-scheme: dark) {
+        .nav {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .nav-item {
+        padding: var(--05) var(--1);
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        text-decoration: none;
+        border-radius: var(--025);
+        cursor: pointer;
+        transition: color 0.15s, background 0.15s;
+      }
+
+      .nav-item:hover {
+        color: var(--text-color);
+        background: var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .nav-item:hover {
+          background: var(--slate-dark);
+        }
+      }
+
+      .nav-item.active {
+        color: var(--text-color);
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+      }
+
+      .setup-check {
+        color: var(--every-green);
+        margin-left: var(--025);
+        vertical-align: middle;
+      }
+
+      .setup-check.hidden {
+        display: none;
+      }
+
+      .nav-spacer {
+        flex: 1;
+      }
+
+      /* Settings menu */
+      .settings-menu {
+        position: relative;
+      }
+
+      .settings-toggle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--slate-light);
+        border: none;
+        cursor: pointer;
         display: flex;
         align-items: center;
-        gap: var(--1);
+        justify-content: center;
+        font-size: 16px;
+        transition: background 0.15s;
       }
 
-      .header-right {
-        display: flex;
-        align-items: center;
-        gap: var(--1);
+      @media (prefers-color-scheme: dark) {
+        .settings-toggle {
+          background: var(--slate-dark);
+        }
       }
 
-      .user-email {
+      .settings-toggle:hover {
+        background: var(--accent-color);
+        color: var(--white);
+      }
+
+      .settings-dropdown {
+        position: absolute;
+        top: calc(100% + var(--05));
+        right: 0;
+        background: var(--background);
+        border: 1px solid var(--slate-light);
+        border-radius: var(--025);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        min-width: 220px;
+        z-index: 100;
+        display: none;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .settings-dropdown {
+          border-color: var(--slate-dark);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+      }
+
+      .settings-dropdown.open {
+        display: block;
+      }
+
+      .settings-item {
+        padding: var(--1);
+        border-bottom: 1px solid var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .settings-item {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .settings-item:last-child {
+        border-bottom: none;
+      }
+
+      .settings-item-label {
         font-size: calc(12px * var(--sf, 1));
         color: var(--text-color-dimmed);
+        margin-bottom: var(--025);
       }
 
-      .logo {
-        width: calc(var(--2));
-        height: calc(var(--2));
-        background: var(--accent-color);
-        border-radius: 4px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: 1fr 1fr;
-        gap: 2px;
-        padding: 4px;
+      .settings-item-value {
+        font-size: calc(14px * var(--sf, 1));
+        display: flex;
+        align-items: center;
+        gap: var(--05);
       }
 
-      .logo-cell {
-        background: var(--background);
-        border-radius: 2px;
+      .settings-item-note {
+        font-size: calc(11px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin-top: var(--025);
       }
 
-      .logo-title {
-        font-family: var(--typeface-medium), system-ui, sans-serif;
-        font-size: calc(18px * var(--sf, 1));
-        font-weight: 500;
-        margin: 0;
+      .notification-status {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--025);
+      }
+
+      .notification-status::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--tuned-red);
+      }
+
+      .notification-status.enabled::before {
+        background: var(--every-green);
+      }
+
+      .settings-button {
+        width: 100%;
+        padding: var(--05) var(--1);
+        border: none;
+        border-radius: var(--025);
+        background: transparent;
+        color: var(--text-color);
+        font-family: inherit;
+        font-size: calc(14px * var(--sf, 1));
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .settings-button:hover {
+        background: var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .settings-button:hover {
+          background: var(--slate-dark);
+        }
       }
 
       /* Views */
@@ -91,59 +230,325 @@
         display: block;
       }
 
-      /* Status card */
-      .status-card {
+      /* Schedule info bar (above calendar) */
+      .schedule-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--1);
+        width: 100%;
+      }
+
+      .schedule-status {
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+      }
+
+      .help-btn {
+        background: none;
+        border: none;
+        padding: var(--025);
+        cursor: pointer;
+        color: var(--text-color-dimmed);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.15s, background 0.15s;
+        margin-left: auto;
+      }
+
+      .help-btn:hover {
+        color: var(--text-color);
         background: var(--slate-light);
-        border-radius: var(--05);
-        padding: var(--2);
-        margin-bottom: var(--2);
-        text-align: center;
       }
 
       @media (prefers-color-scheme: dark) {
-        .status-card {
+        .help-btn:hover {
           background: var(--slate-dark);
         }
       }
 
-      .status-indicator {
-        display: inline-flex;
+      .help-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
         align-items: center;
-        gap: var(--05);
+        justify-content: center;
+        z-index: 500;
+        padding: var(--2);
+      }
+
+      .help-popup.hidden {
+        display: none;
+      }
+
+      .help-popup-content {
+        background: var(--background);
+        border-radius: var(--05);
+        padding: var(--2);
+        max-width: 400px;
+        width: 100%;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .help-popup-close {
+        position: absolute;
+        top: var(--05);
+        right: var(--05);
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: var(--text-color-dimmed);
+        cursor: pointer;
+        line-height: 1;
+        padding: var(--025);
+      }
+
+      .help-popup-close:hover {
+        color: var(--text-color);
+      }
+
+      .help-popup-content h4 {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(14px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--1);
+      }
+
+      .help-popup-content ul {
+        margin: 0;
+        padding-left: var(--2);
+        color: var(--text-color-dimmed);
+        font-size: calc(14px * var(--sf, 1));
+        line-height: 1.6;
+      }
+
+      .help-popup-content li {
         margin-bottom: var(--05);
       }
 
-      .status-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--every-green);
+      /* Blocking card */
+      .blocking-card {
+        background: #dff0ff;
+        border-radius: 5px;
+        padding: 20px 15px 40px;
+        min-height: 236px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
       }
 
-      .status-dot.blocking {
-        background: var(--tuned-red);
+      @media (prefers-color-scheme: dark) {
+        .blocking-card {
+          background: #1a3a5c;
+        }
       }
 
-      .status-text {
+      .blocking-card-content {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .blocking-session-title {
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color);
+        margin: 0;
+      }
+
+      .blocking-session-time {
+        font-size: calc(12px * var(--sf, 1));
+        color: #565656;
+        margin: 0;
+      }
+
+      .blocking-session-time .date {
+        color: #959595;
+      }
+
+      .blocking-helper-text {
+        font-size: calc(12px * var(--sf, 1));
+        color: #595959;
+        margin: var(--1) 0 0;
+        padding: 0 10px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .blocking-session-time {
+          color: #a0a0a0;
+        }
+        .blocking-session-time .date {
+          color: #777;
+        }
+        .blocking-helper-text {
+          color: #888;
+        }
+      }
+
+      /* Session ended view */
+      .session-ended-title {
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color);
+        margin: 0 0 20px;
+        text-align: center;
+      }
+
+      .credentials-label {
+        font-size: calc(12px * var(--sf, 1));
+        color: #595959;
+        margin: 0 0 10px;
+        text-align: center;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .credentials-label {
+          color: #888;
+        }
+      }
+
+      .credential-box {
+        background: #c6e5ff;
+        border-radius: 3px;
+        padding: 10px 15px;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .credential-box {
+          background: #0d4a7a;
+        }
+      }
+
+      .credential-box-label {
+        font-size: calc(11px * var(--sf, 1));
+        color: #595959;
+        margin: 0 0 4px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .credential-box-label {
+          color: #a0a0a0;
+        }
+      }
+
+      .credential-box-value {
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color);
+        margin: 0;
+        font-family: var(--typeface-mono, monospace), monospace;
+        word-break: break-all;
+      }
+
+      .session-ended-instructions {
+        margin-top: var(--2);
+      }
+
+      .session-ended-instructions h3 {
         font-family: var(--typeface-medium), system-ui, sans-serif;
-        font-size: calc(16px * var(--sf, 1));
+        font-size: calc(14px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--1);
       }
 
-      .countdown {
-        font-family: var(--typeface-mono), monospace;
-        font-size: calc(48px * var(--sf, 1));
-        margin: var(--1) 0;
-      }
-
-      .countdown-label {
+      .session-ended-instructions ol {
+        margin: 0;
+        padding-left: var(--2);
         color: var(--text-color-dimmed);
+        font-size: calc(14px * var(--sf, 1));
+        line-height: 1.6;
+      }
+
+      .session-ended-instructions li {
+        margin-bottom: var(--05);
+      }
+
+      .close-session-btn {
+        margin-top: var(--2);
+      }
+
+      /* Toggle switch */
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--05) 0;
+      }
+
+      .toggle-label {
         font-size: calc(14px * var(--sf, 1));
       }
 
-      .next-session {
-        color: var(--text-color-dimmed);
+      .toggle-switch {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        background: var(--slate-light);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.2s;
+        flex-shrink: 0;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .toggle-switch {
+          background: var(--slate-dark);
+        }
+      }
+
+      .toggle-switch::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        background: var(--white);
+        border-radius: 50%;
+        transition: transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      .toggle-switch.active {
+        background: var(--accent-color);
+      }
+
+      .toggle-switch.active::after {
+        transform: translateX(20px);
+      }
+
+      /* Select dropdown */
+      .settings-select {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--05) 0;
+      }
+
+      .settings-select select {
+        padding: var(--025) var(--05);
+        border: 1px solid var(--slate-light);
+        border-radius: var(--025);
+        background: var(--background);
+        color: var(--text-color);
+        font-family: inherit;
         font-size: calc(14px * var(--sf, 1));
-        margin-top: var(--05);
+        cursor: pointer;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .settings-select select {
+          border-color: var(--slate-dark);
+        }
       }
 
       /* Cards */
@@ -203,6 +608,147 @@
       .instructions li {
         margin-bottom: var(--05);
         line-height: 1.5;
+      }
+
+      /* Page title (Setup, Settings, FAQ) */
+      .page-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(28px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--2);
+      }
+
+      /* Disabled button state */
+      ds-button[disabled] {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      .todo-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 var(--2);
+      }
+
+      .todo-item {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--1);
+        padding: var(--1) 0;
+        border-bottom: 1px solid var(--slate-light);
+      }
+
+      .todo-number {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(16px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        min-width: 24px;
+        flex-shrink: 0;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .todo-item {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .todo-item:last-child {
+        border-bottom: none;
+      }
+
+      .todo-checkbox {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--slate-light);
+        border-radius: 4px;
+        flex-shrink: 0;
+        margin-top: 2px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s, border-color 0.15s;
+      }
+
+      .todo-checkbox:hover:not(.disabled) {
+        border-color: var(--accent-color);
+      }
+
+      .todo-checkbox.disabled {
+        cursor: default;
+      }
+
+      .todo-checkbox.disabled:not(.checked) {
+        opacity: 0.5;
+      }
+
+      .todo-checkbox.checked {
+        background: var(--accent-color);
+        border-color: var(--accent-color);
+      }
+
+      .todo-checkbox.checked::after {
+        content: "✓";
+        color: var(--white);
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .todo-checkbox {
+          border-color: var(--slate-dark);
+        }
+      }
+
+      .todo-content {
+        flex: 1;
+      }
+
+      .todo-content p {
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      .todo-content p.note {
+        font-size: calc(12px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin-top: var(--025);
+      }
+
+      .todo-item.collapsed .todo-collapsible {
+        display: none;
+      }
+
+      .todo-summary {
+        display: none;
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin-top: var(--025);
+      }
+
+      .todo-item.collapsed .todo-summary {
+        display: block;
+      }
+
+      .todo-item.collapsed .todo-content {
+        cursor: pointer;
+      }
+
+      .todo-item.collapsed .todo-content p:first-child::after {
+        content: " (click to edit)";
+        font-size: calc(12px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+      }
+
+      .section-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(16px * var(--sf, 1));
+        font-weight: 500;
+        margin: var(--2) 0 var(--1);
+      }
+
+      .section-title:first-of-type {
+        margin-top: 0;
       }
 
       /* Password reveal */
@@ -281,23 +827,6 @@
         color: var(--text-color-dimmed);
       }
 
-      /* Notification banner */
-      .notification-banner {
-        background: var(--yellow);
-        color: var(--black);
-        padding: var(--1);
-        border-radius: var(--025);
-        margin-bottom: var(--2);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--1);
-      }
-
-      .notification-banner.hidden {
-        display: none;
-      }
-
       .locked-notice {
         text-align: center;
         color: var(--text-color-dimmed);
@@ -318,244 +847,353 @@
       .unlock-countdown.hidden {
         display: none;
       }
+
+      /* Settings page */
+
+      .settings-section {
+        margin-bottom: var(--2);
+        padding-bottom: var(--2);
+        border-bottom: 1px solid var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .settings-section {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .settings-section:last-of-type {
+        border-bottom: none;
+      }
+
+      .settings-section-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(14px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--05);
+        color: var(--text-color-dimmed);
+      }
+
+      .settings-email {
+        font-size: calc(16px * var(--sf, 1));
+        margin: 0;
+      }
+
+      .settings-description {
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin: 0 0 var(--1);
+        line-height: 1.5;
+      }
+
+      .settings-notification-row {
+        margin: 0 0 var(--05);
+      }
+
+      .settings-credential-display {
+        font-size: calc(14px * var(--sf, 1));
+        margin: 0 0 var(--1);
+      }
+
+      .settings-blocked-notice {
+        font-size: calc(12px * var(--sf, 1));
+        color: var(--tuned-red);
+        margin: var(--05) 0 0;
+      }
+
+      .settings-blocked-notice.hidden {
+        display: none;
+      }
+
+      .admin-link {
+        color: var(--accent-color);
+        text-decoration: none;
+        font-size: calc(14px * var(--sf, 1));
+      }
+
+      .admin-link:hover {
+        text-decoration: underline;
+      }
+
+      /* Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: var(--2);
+      }
+
+      .modal-overlay.hidden {
+        display: none;
+      }
+
+      .modal {
+        background: var(--background);
+        border-radius: var(--05);
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--1) var(--2);
+        border-bottom: 1px solid var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .modal-header {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .modal-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(16px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--text-color-dimmed);
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .modal-close:hover {
+        color: var(--text-color);
+      }
+
+      .modal-body {
+        padding: var(--2);
+      }
+
+      .modal-footer {
+        display: flex;
+        gap: var(--1);
+        justify-content: flex-end;
+        padding: var(--1) var(--2);
+        border-top: 1px solid var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .modal-footer {
+          border-top-color: var(--slate-dark);
+        }
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <!-- Header -->
-      <div class="header">
-        <div class="header-left">
-          <div class="logo">
-            <div class="logo-cell"></div>
-            <div class="logo-cell"></div>
-            <div class="logo-cell"></div>
-            <div class="logo-cell"></div>
-          </div>
-          <h1 class="logo-title">Screen Time Blocker</h1>
-        </div>
-        <div class="header-right">
-          <span class="user-email" id="user-email"></span>
-          <ds-button secondary id="logout-btn" class="hidden">Log out</ds-button>
-          <ds-button secondary id="enable-notifications" class="hidden"
-            >Enable notifications</ds-button
-          >
-        </div>
-      </div>
+      <app-header current-page="app" id="app-header"></app-header>
 
-      <!-- Notification permission banner -->
-      <div class="notification-banner hidden" id="notification-banner">
-        <span>Enable notifications to know when blocking starts and ends.</span>
-        <ds-button secondary id="request-notifications">Enable</ds-button>
-      </div>
+      <!-- Setup -->
+      <div class="view setup-page" id="view-setup">
+        <h1 class="page-title">
+          Setup
+          <svg class="setup-check hidden" id="setup-check" width="24" height="24" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle; margin-left: 4px;">
+            <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm3.78 5.22a.75.75 0 0 0-1.06 0L7 8.94 5.28 7.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.06 0l4.25-4.25a.75.75 0 0 0 0-1.06Z"/>
+          </svg>
+        </h1>
 
-      <!-- Setup: Credentials -->
-      <div class="view" id="view-setup-credentials">
-        <div class="instructions" style="margin-bottom: var(--2);">
-          <h3>How it works</h3>
-          <ol>
-            <li>Go to <a href="https://account.apple.com/account" target="_blank">account.apple.com</a> to create an Apple Account only for Screen Time recovery</li>
-            <li>Store the password here (you won't be able to see it). If you generated the password via a password manager, make sure to delete it from there&mdash;otherwise you could bypass the block</li>
-            <li>Schedule your blocking times</li>
-            <li>When blocking starts, set Screen Time with a random PIN</li>
-            <li>Password is only released in this app when a blocking period ends</li>
-          </ol>
-        </div>
+        <ul class="todo-list">
+          <li class="todo-item">
+            <span class="todo-number">1.</span>
+            <div class="todo-content">
+              <p>Go to <a href="https://account.apple.com/account" target="_blank">account.apple.com</a> to create an Apple Account only to use for Screen Time recovery</p>
+            </div>
+            <div class="todo-checkbox" id="checkbox-create-account"></div>
+          </li>
+          <li class="todo-item" id="todo-credentials">
+            <span class="todo-number">2.</span>
+            <div class="todo-content">
+              <p>Store the Apple Account credentials here</p>
+              <p class="note">If you generated the password via a password manager, make sure to delete it from there. Otherwise you would be able to bypass the screen time block.</p>
+              <div class="form-group" style="margin-top: var(--1);">
+                <label for="apple-id">Apple Account email</label>
+                <input
+                  type="email"
+                  id="apple-id"
+                  placeholder="blocker-recovery@icloud.com"
+                />
+              </div>
+              <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Paste password" />
+              </div>
+            </div>
+            <div class="todo-checkbox" id="checkbox-credentials"></div>
+          </li>
+        </ul>
 
-        <p class="setup-step">Step 1 of 2</p>
-        <h2>Your recovery credentials</h2>
-        <p class="setup-description">
-          Create a dedicated Apple ID just for Screen Time recovery. Use a long,
-          random password that you won't remember.
-        </p>
-
-        <div class="form-group">
-          <label for="apple-id">Apple ID email</label>
-          <input
-            type="email"
-            id="apple-id"
-            placeholder="blocker-recovery@icloud.com"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="password">Password (paste from your password manager)</label>
-          <input type="password" id="password" placeholder="Paste password" />
-        </div>
-
-        <div class="form-row">
-          <ds-button primary id="next-to-schedule">Next</ds-button>
-        </div>
-      </div>
-
-      <!-- Setup: Schedule -->
-      <div class="view" id="view-setup-schedule">
-        <p class="setup-step">Step 2 of 2</p>
-        <h2>Your blocking schedule</h2>
-        <p class="setup-description">
-          Drag to create blocking sessions. Click a block to toggle weekly
-          repeat (solid = recurring, striped = one-time). Right-click or long
-          press to delete.
-        </p>
-
-        <div id="schedule-editor-setup"></div>
-
-        <div class="form-row">
-          <ds-button secondary id="back-to-credentials">Back</ds-button>
-          <ds-button primary id="save-and-activate">Save & activate</ds-button>
-        </div>
+        <ds-button primary id="go-to-schedule-btn" disabled>Go to schedule</ds-button>
       </div>
 
       <!-- Main: Idle -->
       <div class="view" id="view-idle">
-        <div class="status-card">
-          <div class="status-indicator">
-            <div class="status-dot"></div>
-            <span class="status-text">Not blocking</span>
-          </div>
-          <div class="next-session" id="next-session-text"></div>
-        </div>
+        <div id="schedule-editor-idle"></div>
 
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Schedule</h3>
-            <ds-button secondary id="edit-schedule">Edit</ds-button>
-          </div>
-          <div id="schedule-preview"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Credentials</h3>
-            <ds-button secondary id="edit-credentials">Edit</ds-button>
-          </div>
-          <div class="credential-display">
-            <span>Apple ID:</span> <span id="display-apple-id"></span>
-          </div>
-          <div class="credential-display">
-            <span>Password:</span> ••••••••••••••••
+        <!-- Help popup -->
+        <div class="help-popup hidden" id="schedule-help-popup">
+          <div class="help-popup-content">
+            <button class="help-popup-close" id="schedule-help-close">&times;</button>
+            <h4>How to create sessions</h4>
+            <ul>
+              <li>Drag on the calendar to create blocking sessions</li>
+              <li>Click a block to toggle weekly repeat (green tint = recurring)</li>
+              <li>Right-click or long press to delete</li>
+            </ul>
           </div>
         </div>
       </div>
 
       <!-- Main: Blocking -->
       <div class="view" id="view-blocking">
-        <div class="status-card">
-          <div class="status-indicator">
-            <div class="status-dot blocking" id="status-dot-blocking"></div>
-            <span class="status-text" id="status-text-blocking">Blocking active</span>
+        <div class="blocking-card">
+          <div class="blocking-card-content">
+            <p class="blocking-session-title" id="blocking-session-title">Your session has started</p>
+            <p class="blocking-session-time" id="blocking-session-time"></p>
           </div>
-          <div class="countdown" id="countdown"></div>
-          <div class="countdown-label">until <span id="until-time"></span></div>
-          <div class="unlock-countdown hidden" id="unlock-countdown">
-            Unlocks in <span id="unlock-seconds">60</span>s
+        </div>
+        <p class="blocking-helper-text">
+          Your Screen Time credentials will be shown in the blue rectangle by the end of the session
+        </p>
+      </div>
+
+      <!-- Main: Session Ended (credentials reveal) -->
+      <div class="view" id="view-session-ended">
+        <div class="blocking-card">
+          <div class="blocking-card-content">
+            <p class="session-ended-title" id="session-ended-title">Your session has ended</p>
+            <p class="credentials-label">This is your recovery Apple Account credentials</p>
+            <div class="credential-box">
+              <p class="credential-box-label">Email</p>
+              <p class="credential-box-value" id="revealed-email">—</p>
+            </div>
+            <div class="credential-box">
+              <p class="credential-box-label">Password</p>
+              <p class="credential-box-value" id="revealed-password">—</p>
+            </div>
           </div>
         </div>
 
-        <div class="instructions">
-          <h3>What to do now</h3>
+        <div class="session-ended-instructions">
+          <h3>How to unlock Screen Time Settings</h3>
           <ol>
             <li>Open System Settings → Screen Time</li>
-            <li>Click "Change Passcode"</li>
-            <li>Set recovery to your dedicated Apple ID</li>
-            <li>
-              <strong>MASH RANDOM KEYS</strong> for the 4-digit PIN (don't try
-              to remember it!)
-            </li>
+            <li>Click "Change Passcode…" then "Forgot Passcode?"</li>
+            <li>Sign in with the Apple Account above to reset the Screen Time passcode</li>
           </ol>
         </div>
 
-        <ds-button secondary id="open-screen-time-blocking"
-          >Open Screen Time settings</ds-button
-        >
-
-        <p class="locked-notice">
-          Schedule and credentials are locked during blocking.
-        </p>
+        <ds-button primary class="close-session-btn" id="close-session-btn">Close session</ds-button>
       </div>
 
-      <!-- Main: Password Reveal -->
-      <div class="view" id="view-reveal">
-        <div class="status-card">
-          <div class="status-indicator">
-            <div class="status-dot"></div>
-            <span class="status-text">Blocking ended</span>
+
+      <!-- Settings -->
+      <div class="view" id="view-settings">
+        <h1 class="page-title">Settings</h1>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Account</h3>
+          <p class="settings-email" id="settings-user-email"></p>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Recovery credentials</h3>
+          <p class="settings-description">
+            Apple Account used for Screen Time passcode recovery.
+          </p>
+          <p class="settings-credential-display" id="settings-credential-display">Not configured</p>
+          <ds-button secondary id="change-credentials-btn">Change credentials</ds-button>
+          <p class="settings-blocked-notice hidden" id="credentials-blocked-notice">Cannot change during blocking</p>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Notifications</h3>
+          <p class="settings-notification-row">
+            <span class="notification-status" id="notification-status">Disabled</span>
+          </p>
+          <p class="settings-description">
+            Reminds you to start blocking when a session begins.
+          </p>
+          <ds-button secondary id="enable-notifications-btn" class="hidden">Enable notifications</ds-button>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Calendar</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">Show 24 hour calendar</span>
+            <div class="toggle-switch" id="toggle-24h"></div>
           </div>
-          <p>Your password is ready.</p>
-        </div>
-
-        <div class="card">
-          <h3 class="card-title">Recovery password</h3>
-          <div class="password-box" id="revealed-password"></div>
-          <div class="password-actions">
-            <ds-button secondary id="copy-password">Copy</ds-button>
-            <ds-button secondary id="hide-password">Hide</ds-button>
+          <div class="settings-select">
+            <span class="toggle-label">First day of week</span>
+            <select id="first-day-of-week">
+              <option value="0">Sunday</option>
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+            </select>
           </div>
         </div>
 
-        <div class="instructions">
-          <h3>Unlocking Screen Time settings</h3>
-          <ol>
-            <li>In Screen Time settings, go to Lock Screen Time Settings</li>
-            <li>If it's locked, click Change Passcode…</li>
-            <li>In the passcode prompt, choose Forgot Passcode</li>
-            <li>You'll see Screen Time Passcode Recovery</li>
-            <li>Enter the Apple Account email you created for Screen Time recovery</li>
-            <li>Sign in to that Apple Account using the password above</li>
-          </ol>
+        <div class="settings-section hidden" id="admin-section">
+          <h3 class="settings-section-title">Admin</h3>
+          <a href="admin.html" class="admin-link">Open admin panel</a>
         </div>
 
-        <ds-button secondary id="open-screen-time-reveal"
-          >Open Screen Time settings</ds-button
-        >
+        <ds-button secondary id="settings-logout">Log out</ds-button>
       </div>
 
-      <!-- Edit: Schedule -->
-      <div class="view" id="view-edit-schedule">
-        <h2>Edit schedule</h2>
-        <p class="setup-description">
-          Drag to create blocking sessions. Click a block to toggle weekly
-          repeat (solid = recurring, striped = one-time). Right-click or long
-          press to delete.
-        </p>
-
-        <div id="schedule-editor-edit"></div>
-
-        <div class="form-row">
-          <ds-button secondary id="cancel-edit-schedule">Cancel</ds-button>
-          <ds-button primary id="save-schedule">Save</ds-button>
-        </div>
-      </div>
-
-      <!-- Edit: Credentials -->
-      <div class="view" id="view-edit-credentials">
-        <h2>Edit credentials</h2>
-        <p class="setup-description">
-          Update your recovery Apple ID and password.
-        </p>
-
-        <div class="form-group">
-          <label for="edit-apple-id">Apple ID email</label>
-          <input
-            type="email"
-            id="edit-apple-id"
-            placeholder="blocker-recovery@icloud.com"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="edit-password"
-            >Password (leave blank to keep current)</label
-          >
-          <input
-            type="password"
-            id="edit-password"
-            placeholder="Paste new password"
-          />
-        </div>
-
-        <div class="form-row">
-          <ds-button secondary id="cancel-edit-credentials">Cancel</ds-button>
-          <ds-button primary id="save-credentials">Save</ds-button>
+      <!-- Credentials Modal -->
+      <div class="modal-overlay hidden" id="credentials-modal">
+        <div class="modal">
+          <div class="modal-header">
+            <h3 class="modal-title">Change credentials</h3>
+            <button class="modal-close" id="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p class="settings-description">
+              Apple Account used for Screen Time passcode recovery.
+            </p>
+            <div class="form-group">
+              <label for="edit-apple-id">Apple ID email</label>
+              <input
+                type="email"
+                id="edit-apple-id"
+                placeholder="blocker-recovery@icloud.com"
+              />
+            </div>
+            <div class="form-group">
+              <label for="edit-password">Password (leave blank to keep current)</label>
+              <input
+                type="password"
+                id="edit-password"
+                placeholder="Paste new password"
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <ds-button secondary id="modal-cancel">Cancel</ds-button>
+            <ds-button primary id="save-credentials">Save</ds-button>
+          </div>
         </div>
       </div>
     </div>
@@ -566,16 +1204,17 @@
         setToken,
         generateVaultToken,
         getVault,
+        getPassword,
         saveCredentials,
         syncScheduleToWorker,
-        getPassword,
       } from "./js/api.js";
       import {
         initAuth,
         isAuthenticated,
-        getCurrentUser,
         clearAuth,
+        getCurrentJwt,
       } from "./js/auth.js";
+      import { convex } from "./js/convex.js";
       import { createScheduleEditor } from "./js/schedule.js";
       import {
         isSupported as notificationsSupported,
@@ -583,16 +1222,17 @@
         requestPermission,
         scheduleBlockingNotifications,
       } from "./js/notifications.js";
+      import "./js/components/app-header.js";
 
       // State
       let vault = null;
       let sessions = [];
       let vaultToken = null;
-      let setupEditor = null;
-      let editEditor = null;
-      let previewEditor = null;
+      let idleEditor = null;
       let countdownInterval = null;
       let pollInterval = null;
+      let sessionJustEnded = false;
+      let endedSessionInfo = null;
 
       // Check for Convex auth
       async function checkAuth() {
@@ -602,24 +1242,45 @@
           return false;
         }
 
-        // Show user email
-        const user = getCurrentUser();
-        if (user?.email) {
-          document.getElementById("user-email").textContent = user.email;
+        // Set auth on convex client and fetch user email
+        try {
+          const jwt = getCurrentJwt();
+          if (jwt) {
+            convex.setAuth(() => jwt);
+            const { api } = await import("./convex/_generated/api.js");
+            const user = await convex.query(api.users.current);
+            if (user?.email) {
+              const settingsEmail = document.getElementById("settings-user-email");
+              if (settingsEmail) {
+                settingsEmail.textContent = user.email;
+              }
+            }
+
+            // Check if admin and show admin section
+            console.log("About to check admin, api.admin:", api.admin);
+            try {
+              const isAdmin = await convex.query(api.admin.isAdmin);
+              console.log("Admin check result:", isAdmin);
+              if (isAdmin) {
+                const adminSection = document.getElementById("admin-section");
+                console.log("Found admin section:", adminSection);
+                if (adminSection) {
+                  adminSection.classList.remove("hidden");
+                  console.log("Admin section shown");
+                }
+              }
+            } catch (adminErr) {
+              console.error("Admin check failed:", adminErr);
+            }
+          }
+        } catch (err) {
+          console.error("Failed to fetch user:", err);
         }
-        document.getElementById("logout-btn").classList.remove("hidden");
 
         // Get vault token (separate from Convex auth)
         vaultToken = getToken();
         return true;
       }
-
-      // Logout handler
-      document.getElementById("logout-btn").addEventListener("click", () => {
-        clearAuth();
-        localStorage.removeItem("blocker_token");
-        window.location.href = "index.html";
-      });
 
       // View management
       function showView(viewId) {
@@ -627,7 +1288,231 @@
           v.classList.remove("active");
         });
         document.getElementById(viewId)?.classList.add("active");
+        updateNav(viewId);
       }
+
+      // Nav management
+      function updateNav(viewId) {
+        const navItems = document.querySelectorAll(".nav-item[data-nav]");
+        navItems.forEach((item) => item.classList.remove("active"));
+      }
+
+      // Settings navigation from header component
+      document.addEventListener("navigate-settings", () => {
+        updateSettingsView();
+        showView("view-settings");
+      });
+
+      // Update settings view state
+      function updateSettingsView() {
+        updateNotificationStatus();
+        updateCalendarSettings();
+
+        // Update credential display
+        const credentialDisplay = document.getElementById("settings-credential-display");
+        const changeBtn = document.getElementById("change-credentials-btn");
+        const blockedNotice = document.getElementById("credentials-blocked-notice");
+
+        if (vault?.screenTimeAppleId && vault?.hasStoredPassword) {
+          credentialDisplay.textContent = `${vault.screenTimeAppleId} • ••••••••`;
+        } else if (vault?.screenTimeAppleId) {
+          credentialDisplay.textContent = `${vault.screenTimeAppleId} (no password)`;
+        } else {
+          credentialDisplay.textContent = "Not configured";
+        }
+
+        // Disable change button during blocking
+        if (vault?.isBlocking) {
+          changeBtn.setAttribute("disabled", "true");
+          blockedNotice.classList.remove("hidden");
+        } else {
+          changeBtn.removeAttribute("disabled");
+          blockedNotice.classList.add("hidden");
+        }
+      }
+
+      // Credentials modal handlers
+      function openCredentialsModal() {
+        if (vault?.isBlocking) return;
+
+        // Populate modal fields
+        document.getElementById("edit-apple-id").value = vault?.screenTimeAppleId || "";
+        document.getElementById("edit-password").value = "";
+        document.getElementById("credentials-modal").classList.remove("hidden");
+      }
+
+      function closeCredentialsModal() {
+        document.getElementById("credentials-modal").classList.add("hidden");
+      }
+
+      document.getElementById("change-credentials-btn").addEventListener("click", openCredentialsModal);
+      document.getElementById("modal-close").addEventListener("click", closeCredentialsModal);
+      document.getElementById("modal-cancel").addEventListener("click", closeCredentialsModal);
+
+      // Close modal on overlay click
+      document.getElementById("credentials-modal").addEventListener("click", (e) => {
+        if (e.target.id === "credentials-modal") {
+          closeCredentialsModal();
+        }
+      });
+
+      // Logo click - go to main app view (always use updateView to ensure correct state)
+      document.addEventListener("navigate-home", () => {
+        updateView();
+      });
+
+      // Settings page handlers
+      document.getElementById("settings-logout").addEventListener("click", () => {
+        clearAuth();
+        localStorage.removeItem("blocker_token");
+        window.location.href = "index.html";
+      });
+
+      document.getElementById("enable-notifications-btn").addEventListener("click", async () => {
+        await requestPermission();
+        updateNotificationStatus();
+      });
+
+      // Close session button - clears ended state and returns to idle
+      document.getElementById("close-session-btn").addEventListener("click", async () => {
+        sessionJustEnded = false;
+        endedSessionInfo = null;
+        // Reload vault to get fresh state and show idle view
+        await loadVault();
+      });
+
+      function updateNotificationStatus() {
+        const status = document.getElementById("notification-status");
+        const enableBtn = document.getElementById("enable-notifications-btn");
+        const permission = getPermission();
+        if (permission === "granted") {
+          status.textContent = "Enabled";
+          status.classList.add("enabled");
+          enableBtn.classList.add("hidden");
+        } else {
+          status.textContent = "Disabled";
+          status.classList.remove("enabled");
+          enableBtn.classList.remove("hidden");
+        }
+      }
+
+      // Calendar preferences
+      function getCalendarPreferences() {
+        return {
+          show24Hours: localStorage.getItem("blocker_show24h") === "true",
+          firstDayOfWeek: parseInt(localStorage.getItem("blocker_first_day") || "1"), // Default to Monday (1)
+        };
+      }
+
+      function setCalendarPreference(key, value) {
+        localStorage.setItem(key, value);
+        // Refresh schedule editor if it exists
+        if (idleEditor) {
+          const prefs = getCalendarPreferences();
+          idleEditor.setPreferences(prefs);
+        }
+      }
+
+      function updateCalendarSettings() {
+        const prefs = getCalendarPreferences();
+
+        // Update 24h toggle
+        const toggle24h = document.getElementById("toggle-24h");
+        if (prefs.show24Hours) {
+          toggle24h.classList.add("active");
+        } else {
+          toggle24h.classList.remove("active");
+        }
+
+        // Update first day of week select
+        const firstDaySelect = document.getElementById("first-day-of-week");
+        firstDaySelect.value = prefs.firstDayOfWeek.toString();
+      }
+
+      // Calendar settings event listeners
+      document.getElementById("toggle-24h").addEventListener("click", () => {
+        const toggle = document.getElementById("toggle-24h");
+        const isActive = toggle.classList.toggle("active");
+        setCalendarPreference("blocker_show24h", isActive.toString());
+      });
+
+      document.getElementById("first-day-of-week").addEventListener("change", (e) => {
+        setCalendarPreference("blocker_first_day", e.target.value);
+      });
+
+      // Update header status indicator
+      function updateHeaderStatus(isBlocking, activeUntil = null) {
+        const header = document.getElementById("app-header");
+        if (header) {
+          header.isBlocking = isBlocking;
+          header.activeUntil = activeUntil;
+        }
+      }
+
+      // Help popup handlers
+      document.getElementById("schedule-help-close").addEventListener("click", () => {
+        document.getElementById("schedule-help-popup").classList.add("hidden");
+      });
+
+      document.getElementById("schedule-help-popup").addEventListener("click", (e) => {
+        if (e.target.id === "schedule-help-popup") {
+          document.getElementById("schedule-help-popup").classList.add("hidden");
+        }
+      });
+
+      // Todo checkbox click handlers (skip disabled checkboxes)
+      document.querySelectorAll(".todo-checkbox").forEach((checkbox) => {
+        checkbox.addEventListener("click", () => {
+          if (!checkbox.classList.contains("disabled")) {
+            checkbox.classList.toggle("checked");
+            // Update button state when step 1 is toggled
+            updateGoToScheduleButton();
+          }
+        });
+      });
+
+      function updateGoToScheduleButton() {
+        const createAccountCheckbox = document.getElementById("checkbox-create-account");
+        const credentialsCheckbox = document.getElementById("checkbox-credentials");
+        const goToScheduleBtn = document.getElementById("go-to-schedule-btn");
+        const step1Complete = createAccountCheckbox.classList.contains("checked");
+        const step2Complete = credentialsCheckbox.classList.contains("checked");
+        if (step1Complete && step2Complete) {
+          goToScheduleBtn.removeAttribute("disabled");
+        } else {
+          goToScheduleBtn.setAttribute("disabled", "true");
+        }
+      }
+
+      // Update credentials checkbox state instantly
+      function updateCredentialsState() {
+        const appleId = document.getElementById("apple-id").value.trim();
+        const password = document.getElementById("password").value;
+        const checkbox = document.getElementById("checkbox-credentials");
+        const createAccountCheckbox = document.getElementById("checkbox-create-account");
+
+        // Check if BOTH apple id AND password are filled
+        const isComplete = appleId && password;
+
+        if (isComplete) {
+          checkbox.classList.add("checked");
+          // Also check and disable step 1 since having credentials means account was created
+          createAccountCheckbox.classList.add("checked");
+          createAccountCheckbox.classList.add("disabled");
+        } else {
+          checkbox.classList.remove("checked");
+          // Re-enable step 1 if no stored credentials
+          if (!vault?.screenTimeAppleId) {
+            createAccountCheckbox.classList.remove("disabled");
+          }
+        }
+
+        // Update button state
+        updateGoToScheduleButton();
+      }
+
+      document.getElementById("apple-id").addEventListener("input", updateCredentialsState);
+      document.getElementById("password").addEventListener("input", updateCredentialsState);
 
       // Format time
       function formatTime(date) {
@@ -658,43 +1543,83 @@
         }
       }
 
-      // Update countdown display
-      function updateCountdown(activeUntil) {
+      // Check if blocking has ended
+      async function checkBlockingEnd(activeUntil, activeSession) {
         const now = new Date();
         const until = new Date(activeUntil);
         const diffMs = until - now;
 
         if (diffMs <= 0) {
-          // Blocking ended, automatically reveal password
+          // Blocking ended, show session-ended view with credentials
           clearInterval(countdownInterval);
-          revealPassword();
+          sessionJustEnded = true;
+          endedSessionInfo = activeSession;
+          await showSessionEndedView();
+        }
+      }
+
+      // Show session ended view with revealed credentials
+      async function showSessionEndedView() {
+        // Update title with session name
+        const titleEl = document.getElementById("session-ended-title");
+        if (endedSessionInfo?.title) {
+          titleEl.textContent = `Your ${endedSessionInfo.title} session has ended`;
+        } else {
+          titleEl.textContent = "Your session has ended";
+        }
+
+        // Show email from vault
+        const emailEl = document.getElementById("revealed-email");
+        emailEl.textContent = vault?.screenTimeAppleId || "—";
+
+        // Fetch and show password
+        const passwordEl = document.getElementById("revealed-password");
+        try {
+          const result = await getPassword(vaultToken);
+          if (result.blocked) {
+            passwordEl.textContent = "Still blocked";
+          } else {
+            passwordEl.textContent = result.password || "—";
+          }
+        } catch (err) {
+          console.error("Failed to fetch password:", err);
+          passwordEl.textContent = "Error loading";
+        }
+
+        // Update header to show not blocking
+        updateHeaderStatus(false, null);
+
+        showView("view-session-ended");
+      }
+
+      // Update blocking card content
+      function updateBlockingCard(session, activeUntil) {
+        const titleEl = document.getElementById("blocking-session-title");
+        const timeEl = document.getElementById("blocking-session-time");
+
+        if (!session) {
+          titleEl.textContent = "Your session has started";
+          timeEl.innerHTML = "";
           return;
         }
 
-        const hours = Math.floor(diffMs / (1000 * 60 * 60));
-        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-        const totalSeconds = Math.floor(diffMs / 1000);
+        // Session title
+        const sessionTitle = session.title || "Blocked";
+        titleEl.textContent = `Your ${sessionTitle} session has started`;
 
-        const countdown = document.getElementById("countdown");
-        const unlockCountdown = document.getElementById("unlock-countdown");
-        const unlockSeconds = document.getElementById("unlock-seconds");
+        // Format date and time
+        const startDate = new Date(activeUntil);
+        startDate.setHours(session.startHour, session.startMinute, 0);
 
-        if (hours > 0) {
-          countdown.textContent = `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-        } else {
-          countdown.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-        }
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = months[startDate.getMonth()];
+        const day = startDate.getDate();
 
-        // Show unlock countdown in last 60 seconds
-        if (totalSeconds <= 60 && totalSeconds > 0) {
-          unlockCountdown.classList.remove("hidden");
-          unlockSeconds.textContent = totalSeconds;
-        } else {
-          unlockCountdown.classList.add("hidden");
-        }
+        const formatTimeShort = (h, m) => `${h}:${m.toString().padStart(2, "0")}`;
+        const startTime = formatTimeShort(session.startHour, session.startMinute);
+        const endTime = formatTimeShort(session.endHour, session.endMinute);
 
-        document.getElementById("until-time").textContent = formatTime(until);
+        timeEl.innerHTML = `<span class="date">${month} ${day}</span> ${startTime}-${endTime}`;
       }
 
       // Show appropriate view based on state
@@ -704,50 +1629,85 @@
         // Use sessions from state (Convex) or fall back to vault sessions
         const displaySessions = sessions.length > 0 ? sessions : (vault?.sessions || []);
 
-        if (!vault) {
-          // No vault exists, show setup (even if stale token exists)
-          showView("view-setup-credentials");
+        // Check if setup is complete (has both Apple ID and password stored)
+        const isSetUp = vault?.screenTimeAppleId && vault?.hasStoredPassword;
+
+        // Update header status
+        updateHeaderStatus(vault?.isBlocking || false, vault?.activeUntil || null);
+
+        if (!isSetUp) {
+          // Setup not complete, show setup view
+          showView("view-setup");
+          return;
+        }
+
+        // If session just ended, stay on session-ended view
+        if (sessionJustEnded) {
           return;
         }
 
         if (vault?.isBlocking) {
           // Currently blocking
           showView("view-blocking");
-          updateCountdown(vault.activeUntil);
+
+          // Find the active session
+          const activeSession = vault.activeSessionId
+            ? displaySessions.find(s => s.id === vault.activeSessionId)
+            : null;
+
+          // Update the blocking card content
+          updateBlockingCard(activeSession, vault.activeUntil);
+
+          // Check for blocking end every second
           countdownInterval = setInterval(
-            () => updateCountdown(vault.activeUntil),
+            () => checkBlockingEnd(vault.activeUntil, activeSession),
             1000
           );
         } else {
           // Idle
           showView("view-idle");
 
-          // Update display
-          document.getElementById("display-apple-id").textContent =
-            vault?.screenTimeAppleId || "(not set)";
+          // Get locked session ID if currently blocking
+          const lockedSessionId = vault?.activeSessionId || null;
 
-          // Update next session text
-          const nextSessionEl = document.getElementById("next-session-text");
+          // Create editable schedule editor
+          if (!idleEditor) {
+            idleEditor = createScheduleEditor(
+              document.getElementById("schedule-editor-idle"),
+              displaySessions,
+              async (newSessions) => {
+                sessions = newSessions;
+                // Auto-save on change
+                if (vaultToken) {
+                  try {
+                    await syncScheduleToWorker(vaultToken, sessions);
+                    // Update next session text after save
+                    await loadVault();
+                  } catch (err) {
+                    console.error("Failed to auto-save:", err);
+                  }
+                }
+              },
+              { lockedSessionId }
+            );
+            // Apply calendar preferences
+            idleEditor.setPreferences(getCalendarPreferences());
+          } else {
+            idleEditor.setSessions(displaySessions);
+          }
+
+          // Update next session text (inside schedule editor)
           if (vault?.nextSession) {
             const startsAt = new Date(vault.nextSession.startsAt);
             const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-            nextSessionEl.textContent = `Next: ${days[vault.nextSession.day]} ${formatTime(startsAt)} (${formatRelativeTime(startsAt)})`;
+            const time = startsAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+            idleEditor.setNextSessionText(`Next session begins ${days[vault.nextSession.day]} ${time} (${formatRelativeTime(startsAt)})`);
           } else if (displaySessions.length === 0) {
-            nextSessionEl.textContent = "No sessions scheduled";
+            idleEditor.setNextSessionText("No sessions scheduled");
           } else {
-            nextSessionEl.textContent = "";
+            idleEditor.setNextSessionText("");
           }
 
-          // Update schedule preview (use displaySessions from Convex)
-          if (!previewEditor) {
-            previewEditor = createScheduleEditor(
-              document.getElementById("schedule-preview"),
-              displaySessions,
-              () => {} // Read-only
-            );
-          } else {
-            previewEditor.setSessions(displaySessions);
-          }
         }
 
         // Schedule notifications
@@ -765,9 +1725,58 @@
             if (vault?.sessions) {
               sessions = vault.sessions;
             }
+
+            // Sync vault token to Convex if vault exists but not in Convex
+            if (vault) {
+              try {
+                const { api } = await import("./convex/_generated/api.js");
+                const convexVaultToken = await convex.query(api.schedules.getVaultToken);
+                if (!convexVaultToken) {
+                  await convex.mutation(api.schedules.setVaultToken, { vaultToken });
+                  console.log("Synced vault token to Convex");
+                }
+              } catch (syncErr) {
+                console.warn("Could not sync vault token to Convex:", syncErr);
+              }
+            }
           } else {
             vault = null;
           }
+
+          // Auto-check credentials if both fields are set
+          const credentialsCheckbox = document.getElementById("checkbox-credentials");
+          const createAccountCheckbox = document.getElementById("checkbox-create-account");
+
+          if (vault?.screenTimeAppleId) {
+            // Populate the apple ID field
+            document.getElementById("apple-id").value = vault.screenTimeAppleId;
+
+            // Only mark as complete if password is also stored
+            if (vault?.hasStoredPassword) {
+              document.getElementById("password").placeholder = "Password stored (leave blank to keep)";
+              credentialsCheckbox.classList.add("checked");
+              // Also check and disable step 1 since having credentials means account was created
+              createAccountCheckbox.classList.add("checked");
+              createAccountCheckbox.classList.add("disabled");
+            } else {
+              // Apple ID exists but no password - step not complete
+              credentialsCheckbox.classList.remove("checked");
+            }
+          } else {
+            // Enable step 1 if no credentials
+            createAccountCheckbox.classList.remove("disabled");
+          }
+
+          // Show setup checkmark if credentials are complete
+          const setupCheck = document.getElementById("setup-check");
+          if (vault?.screenTimeAppleId && vault?.hasStoredPassword) {
+            setupCheck.classList.remove("hidden");
+          } else {
+            setupCheck.classList.add("hidden");
+          }
+
+          // Update "Go to schedule" button state
+          updateGoToScheduleButton();
 
           updateView();
         } catch (err) {
@@ -775,153 +1784,48 @@
         }
       }
 
-      // Setup: Credentials
-      document.getElementById("next-to-schedule").addEventListener("click", () => {
+      // Go to schedule button - saves credentials first if filled, then shows idle view
+      document.getElementById("go-to-schedule-btn").addEventListener("click", async () => {
         const appleId = document.getElementById("apple-id").value.trim();
         const password = document.getElementById("password").value;
 
-        if (!appleId || !password) {
-          alert("Please enter both Apple ID and password");
-          return;
-        }
-
-        // Store temporarily
-        window._setupCredentials = { appleId, password };
-
-        // Show schedule setup
-        showView("view-setup-schedule");
-
-        if (!setupEditor) {
-          setupEditor = createScheduleEditor(
-            document.getElementById("schedule-editor-setup"),
-            sessions,
-            (newSessions) => {
-              sessions = newSessions;
-            }
-          );
-        }
-      });
-
-      // Setup: Schedule
-      document
-        .getElementById("back-to-credentials")
-        .addEventListener("click", () => {
-          showView("view-setup-credentials");
-        });
-
-      document
-        .getElementById("save-and-activate")
-        .addEventListener("click", async () => {
-          const { appleId, password } = window._setupCredentials || {};
-
-          if (!appleId || !password) {
-            showView("view-setup-credentials");
-            return;
-          }
-
-          if (sessions.length === 0) {
-            alert("Please add at least one blocking session");
-            return;
-          }
-
+        // If credentials are filled, save them first
+        if (appleId && password) {
           try {
-            // Generate new vault token if needed
+            // Generate vault token if needed
             if (!vaultToken) {
               vaultToken = generateVaultToken();
             }
 
-            // Save credentials and schedule to Worker
             await saveCredentials(vaultToken, {
               screenTimeAppleId: appleId,
               screenTimePassword: password,
               sessions,
             });
-
-            // Store token locally
             setToken(vaultToken);
 
-            delete window._setupCredentials;
+            // Save vault token to Convex (for admin panel visibility)
+            const { api } = await import("./convex/_generated/api.js");
+            await convex.mutation(api.schedules.setVaultToken, { vaultToken });
+
             await loadVault();
-
-            // Ask for notification permission
-            if (notificationsSupported() && getPermission() === "default") {
-              document
-                .getElementById("notification-banner")
-                .classList.remove("hidden");
-            }
           } catch (err) {
-            alert("Failed to save: " + err.message);
-          }
-        });
-
-      // Edit Schedule
-      document.getElementById("edit-schedule").addEventListener("click", () => {
-        showView("view-edit-schedule");
-
-        // Use sessions from state (loaded from Convex)
-        const currentSessions = sessions.length > 0 ? sessions : (vault?.sessions || []);
-
-        if (!editEditor) {
-          editEditor = createScheduleEditor(
-            document.getElementById("schedule-editor-edit"),
-            currentSessions,
-            (newSessions) => {
-              sessions = newSessions;
-            }
-          );
-        } else {
-          editEditor.setSessions(currentSessions);
-        }
-        sessions = currentSessions;
-      });
-
-      document
-        .getElementById("cancel-edit-schedule")
-        .addEventListener("click", () => {
-          showView("view-idle");
-        });
-
-      document
-        .getElementById("save-schedule")
-        .addEventListener("click", async () => {
-          if (sessions.length === 0) {
-            alert("Please add at least one blocking session");
+            alert("Failed to save credentials: " + err.message);
             return;
           }
+        }
 
-          try {
-            // Save schedule to Worker
-            if (vaultToken) {
-              await syncScheduleToWorker(vaultToken, sessions);
-            }
-
-            await loadVault();
-          } catch (err) {
-            alert("Failed to save: " + err.message);
-          }
-        });
-
-      // Edit Credentials
-      document
-        .getElementById("edit-credentials")
-        .addEventListener("click", () => {
-          showView("view-edit-credentials");
-          document.getElementById("edit-apple-id").value =
-            vault?.screenTimeAppleId || "";
-          document.getElementById("edit-password").value = "";
-        });
-
-      document
-        .getElementById("cancel-edit-credentials")
-        .addEventListener("click", () => {
-          showView("view-idle");
-        });
+        // Show idle view with schedule editor
+        showView("view-idle");
+        updateView();
+      });
 
       document
         .getElementById("save-credentials")
         .addEventListener("click", async () => {
           const appleId = document.getElementById("edit-apple-id").value.trim();
           const password = document.getElementById("edit-password").value;
+          const saveBtn = document.getElementById("save-credentials");
 
           if (!appleId) {
             alert("Please enter an Apple ID");
@@ -934,14 +1838,33 @@
               return;
             }
 
+            saveBtn.setAttribute("disabled", "true");
+            saveBtn.textContent = "Saving...";
+
             const data = { screenTimeAppleId: appleId };
             if (password) {
               data.screenTimePassword = password;
             }
-            // Save credentials to Worker only (schedule is in Convex)
+            // Save credentials to Worker only
             await saveCredentials(vaultToken, data);
-            await loadVault();
+
+            // Update local vault state
+            if (vaultToken) {
+              vault = await getVault(vaultToken);
+              if (vault?.sessions) {
+                sessions = vault.sessions;
+              }
+            }
+
+            // Close modal and update settings view
+            closeCredentialsModal();
+            updateSettingsView();
+
+            saveBtn.removeAttribute("disabled");
+            saveBtn.textContent = "Save";
           } catch (err) {
+            saveBtn.removeAttribute("disabled");
+            saveBtn.textContent = "Save";
             alert("Failed to save: " + err.message);
           }
         });
@@ -952,100 +1875,6 @@
           "x-apple.systempreferences:com.apple.preference.screentime",
           "_blank"
         );
-      }
-
-      document
-        .getElementById("open-screen-time-blocking")
-        .addEventListener("click", openScreenTimeSettings);
-      document
-        .getElementById("open-screen-time-reveal")
-        .addEventListener("click", openScreenTimeSettings);
-
-      // Password reveal
-      document.getElementById("hide-password").addEventListener("click", () => {
-        showView("view-idle");
-      });
-
-      document
-        .getElementById("copy-password")
-        .addEventListener("click", async () => {
-          const password =
-            document.getElementById("revealed-password").textContent;
-          await navigator.clipboard.writeText(password);
-
-          const btn = document.getElementById("copy-password");
-          btn.textContent = "Copied!";
-          setTimeout(() => {
-            btn.textContent = "Copy";
-          }, 2000);
-        });
-
-      // Reveal password (called when blocking ends and user wants to see it)
-      async function revealPassword() {
-        try {
-          if (!vaultToken) {
-            alert("No vault token - please complete setup first");
-            return;
-          }
-
-          const result = await getPassword(vaultToken);
-
-          if (result.blocked) {
-            // Still blocking, update view
-            if (vault) {
-              vault.isBlocking = true;
-              vault.activeUntil = result.activeUntil;
-              vault.timeRemaining = result.timeRemaining;
-            }
-            updateView();
-            return;
-          }
-
-          document.getElementById("revealed-password").textContent =
-            result.password;
-          showView("view-reveal");
-        } catch (err) {
-          alert("Failed to get password: " + err.message);
-        }
-      }
-
-      // Add click handler to status card when not blocking to reveal password
-      document
-        .querySelector("#view-idle .status-card")
-        .addEventListener("click", () => {
-          if (!vault?.isBlocking && vault?.screenTimeAppleId) {
-            revealPassword();
-          }
-        });
-
-      // Notifications
-      document
-        .getElementById("request-notifications")
-        .addEventListener("click", async () => {
-          const permission = await requestPermission();
-          document.getElementById("notification-banner").classList.add("hidden");
-
-          const notifSessions = sessions.length > 0 ? sessions : (vault?.sessions || []);
-          if (permission === "granted" && notifSessions.length > 0) {
-            scheduleBlockingNotifications(notifSessions);
-          }
-        });
-
-      document
-        .getElementById("enable-notifications")
-        .addEventListener("click", async () => {
-          const permission = await requestPermission();
-          const notifSessions = sessions.length > 0 ? sessions : (vault?.sessions || []);
-          if (permission === "granted" && notifSessions.length > 0) {
-            scheduleBlockingNotifications(notifSessions);
-          }
-        });
-
-      // Show notification button if not granted
-      if (notificationsSupported() && getPermission() !== "granted") {
-        document
-          .getElementById("enable-notifications")
-          .classList.remove("hidden");
       }
 
       // Poll for state changes (in case blocking ends while tab is open)

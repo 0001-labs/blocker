@@ -107,8 +107,8 @@ export async function initAuth() {
   const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
   if (storedToken) {
     try {
-      // Set auth on the Convex client
-      convex.setAuth(storedToken);
+      // Set auth on the Convex client (must be a function that returns the token)
+      convex.setAuth(() => storedToken);
 
       // Validate by fetching current user
       const { api } = await import("../convex/_generated/api.js");

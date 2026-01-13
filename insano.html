@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insano Mode - Screen Time Blocker</title>
+
+    <!-- DS one -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/ds-one@alpha/DS1/1-root/one.css"
+    />
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: var(--2);
+        min-height: 100vh;
+        background: var(--background);
+        color: var(--text-color);
+        font-family: var(--typeface-regular), system-ui, sans-serif;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--2);
+        gap: var(--1);
+      }
+
+      .page-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(28px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .progress-badge {
+        display: flex;
+        align-items: center;
+        gap: var(--05);
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        background: var(--slate-light);
+        padding: var(--025) var(--05);
+        border-radius: 4px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .progress-badge {
+          background: var(--slate-dark);
+        }
+      }
+
+      .progress-badge.complete {
+        background: var(--every-green);
+        color: white;
+      }
+
+      .intro {
+        color: var(--text-color-dimmed);
+        line-height: 1.6;
+        margin-bottom: var(--2);
+      }
+
+      .warning-box {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid var(--tuned-red);
+        border-radius: 8px;
+        padding: var(--1);
+        margin-bottom: var(--2);
+      }
+
+      .warning-box h3 {
+        color: var(--tuned-red);
+        margin: 0 0 var(--05);
+        font-size: calc(14px * var(--sf, 1));
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+      }
+
+      .warning-box p {
+        margin: 0;
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        line-height: 1.5;
+      }
+
+      .checklist-section {
+        margin-bottom: var(--2);
+      }
+
+      .checklist-item {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--1);
+        padding: var(--1) 0;
+        border-bottom: 1px solid var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .checklist-item {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .checklist-item:last-child {
+        border-bottom: none;
+      }
+
+      .checklist-item .step-number {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(16px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        min-width: 24px;
+        flex-shrink: 0;
+      }
+
+      .checklist-item label {
+        cursor: pointer;
+        line-height: 1.5;
+        flex: 1;
+      }
+
+      .checklist-item.checked label {
+        color: var(--text-color-dimmed);
+        text-decoration: line-through;
+      }
+
+      .checklist-item .hint {
+        display: block;
+        font-size: calc(13px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin-top: var(--025);
+      }
+
+      .checklist-item.checked .hint {
+        text-decoration: none;
+      }
+
+      .checklist-item input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin: 2px 0 0 0;
+        cursor: pointer;
+        accent-color: var(--every-green);
+        flex-shrink: 0;
+      }
+
+      .reset-btn {
+        background: none;
+        border: 1px solid var(--slate-light);
+        color: var(--text-color-dimmed);
+        padding: var(--05) var(--1);
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: calc(14px * var(--sf, 1));
+        margin-top: var(--1);
+        transition: all 0.15s;
+      }
+
+      .reset-btn:hover {
+        border-color: var(--tuned-red);
+        color: var(--tuned-red);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .reset-btn {
+          border-color: var(--slate-dark);
+        }
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-top: var(--2);
+        color: var(--accent-color);
+        text-decoration: none;
+      }
+
+      .back-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <app-header current-page="insano" id="app-header"></app-header>
+
+      <div class="page-header">
+        <h1 class="page-title">Insano mode</h1>
+        <div class="progress-badge" id="progress-badge">
+          <span id="progress-percent">0%</span>
+          <span>complete</span>
+        </div>
+      </div>
+
+      <p class="intro">
+        This is the "no bypass" setup: turn your Mac into a typewriter where you can only work inside a small slice of the internet you intentionally allow.
+      </p>
+
+      <div class="warning-box">
+        <h3>Extreme risk level</h3>
+        <p>
+          This means you cannot change any settings during the block (installing apps, changing system settings, browser switching, editing DNS/Network settings). Treat it as a deliberate "locked room" mode.
+        </p>
+      </div>
+
+      <div class="checklist-section">
+        <div class="checklist-item" data-id="privacy-advanced">
+          <span class="step-number">1.</span>
+          <label for="privacy-advanced">
+            System Settings → Privacy & Security → Advanced…
+            <span class="hint">Require an administrator password to access system-wide settings = ON</span>
+          </label>
+          <input type="checkbox" id="privacy-advanced" />
+        </div>
+
+        <div class="checklist-item" data-id="privacy-appstore">
+          <span class="step-number">2.</span>
+          <label for="privacy-appstore">
+            Allow applications from = App Store
+            <span class="hint">Blocks running downloaded apps</span>
+          </label>
+          <input type="checkbox" id="privacy-appstore" />
+        </div>
+
+        <div class="checklist-item" data-id="users-standard">
+          <span class="step-number">3.</span>
+          <label for="users-standard">
+            Use a Standard (non-admin) user account during the block
+          </label>
+          <input type="checkbox" id="users-standard" />
+        </div>
+
+        <div class="checklist-item" data-id="users-admin-password">
+          <span class="step-number">4.</span>
+          <label for="users-admin-password">
+            Keep the admin password inaccessible during the block
+            <span class="hint">This is the "you don't know the keys" principle</span>
+          </label>
+          <input type="checkbox" id="users-admin-password" />
+        </div>
+
+        <div class="checklist-item" data-id="screentime-lock">
+          <span class="step-number">5.</span>
+          <label for="screentime-lock">
+            Lock Screen Time Settings with a random PIN you won't remember
+          </label>
+          <input type="checkbox" id="screentime-lock" />
+        </div>
+
+        <div class="checklist-item" data-id="screentime-apps-add">
+          <span class="step-number">6.</span>
+          <label for="screentime-apps-add">
+            App Limits → Add the apps you want to block
+          </label>
+          <input type="checkbox" id="screentime-apps-add" />
+        </div>
+
+        <div class="checklist-item" data-id="screentime-apps-limit">
+          <span class="step-number">7.</span>
+          <label for="screentime-apps-limit">
+            Set the limit to 0h 0m
+          </label>
+          <input type="checkbox" id="screentime-apps-limit" />
+        </div>
+
+        <div class="checklist-item" data-id="screentime-apps-block">
+          <span class="step-number">8.</span>
+          <label for="screentime-apps-block">
+            Turn on Block at End of Limit
+            <span class="hint">Forces a single "one more minute" request, then the app becomes locked</span>
+          </label>
+          <input type="checkbox" id="screentime-apps-block" />
+        </div>
+
+        <div class="checklist-item" data-id="screentime-apps-allow">
+          <span class="step-number">9.</span>
+          <label for="screentime-apps-allow">
+            Keep only "allowed" apps outside App Limits
+          </label>
+          <input type="checkbox" id="screentime-apps-allow" />
+        </div>
+
+        <div class="checklist-item" data-id="screentime-store">
+          <span class="step-number">10.</span>
+          <label for="screentime-store">
+            Content & Privacy → Store Restrictions: Apps = Don't Allow
+            <span class="hint">Blocks impulse-installing bypass tools</span>
+          </label>
+          <input type="checkbox" id="screentime-store" />
+        </div>
+
+        <div class="checklist-item" data-id="screentime-websites">
+          <span class="step-number">11.</span>
+          <label for="screentime-websites">
+            Configure allowed apps/websites for your scenario
+          </label>
+          <input type="checkbox" id="screentime-websites" />
+        </div>
+
+        <div class="checklist-item" data-id="browsers-safari">
+          <span class="step-number">12.</span>
+          <label for="browsers-safari">
+            Keep Safari only
+            <span class="hint">Sign out of / uninstall Chrome, Arc, Firefox, etc.</span>
+          </label>
+          <input type="checkbox" id="browsers-safari" />
+        </div>
+
+        <div class="checklist-item" data-id="filevault">
+          <span class="step-number">13.</span>
+          <label for="filevault">
+            Turn FileVault ON for data-at-rest protection
+            <span class="hint">If OFF, anyone with physical access can potentially read your disk</span>
+          </label>
+          <input type="checkbox" id="filevault" />
+        </div>
+      </div>
+
+      <button class="reset-btn" id="reset-btn">Reset checklist</button>
+
+      <a href="faq.html" class="back-link">← Back to FAQ</a>
+    </div>
+
+    <!-- Footer -->
+    <app-footer></app-footer>
+
+    <script type="module">
+      import "./js/components/app-header.js";
+      import "./js/components/app-footer.js";
+
+      const STORAGE_KEY = "insano-checklist";
+
+      // Get all checkbox items
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      const progressBadge = document.getElementById("progress-badge");
+      const progressPercent = document.getElementById("progress-percent");
+      const appHeader = document.getElementById("app-header");
+      const resetBtn = document.getElementById("reset-btn");
+
+      // Load saved state
+      function loadState() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const state = JSON.parse(saved);
+          checkboxes.forEach((cb) => {
+            if (state[cb.id]) {
+              cb.checked = true;
+              cb.closest(".checklist-item").classList.add("checked");
+            }
+          });
+        }
+        updateProgress();
+      }
+
+      // Save state
+      function saveState() {
+        const state = {};
+        checkboxes.forEach((cb) => {
+          state[cb.id] = cb.checked;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      // Update progress display
+      function updateProgress() {
+        const total = checkboxes.length;
+        const checked = Array.from(checkboxes).filter((cb) => cb.checked).length;
+        const percent = Math.round((checked / total) * 100);
+
+        progressPercent.textContent = `${percent}%`;
+
+        if (percent === 100) {
+          progressBadge.classList.add("complete");
+          appHeader.setAttribute("insano-mode", "");
+        } else {
+          progressBadge.classList.remove("complete");
+          appHeader.removeAttribute("insano-mode");
+        }
+      }
+
+      // Handle checkbox changes
+      checkboxes.forEach((cb) => {
+        cb.addEventListener("change", () => {
+          const item = cb.closest(".checklist-item");
+          if (cb.checked) {
+            item.classList.add("checked");
+          } else {
+            item.classList.remove("checked");
+          }
+          saveState();
+          updateProgress();
+        });
+      });
+
+      // Handle reset
+      resetBtn.addEventListener("click", () => {
+        if (confirm("Reset all checklist items?")) {
+          checkboxes.forEach((cb) => {
+            cb.checked = false;
+            cb.closest(".checklist-item").classList.remove("checked");
+          });
+          localStorage.removeItem(STORAGE_KEY);
+          updateProgress();
+        }
+      });
+
+      // Initialize
+      loadState();
+    </script>
+  </body>
+</html>

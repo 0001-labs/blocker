@@ -1,7 +1,7 @@
 import { query } from "./_generated/server";
 import { auth } from "./auth";
 
-// Get current authenticated user
+// Get current authenticated user with email
 export const current = query({
   args: {},
   handler: async (ctx) => {
@@ -9,6 +9,17 @@ export const current = query({
     if (!userId) return null;
 
     const user = await ctx.db.get(userId);
-    return user;
+    if (!user) return null;
+
+    // Get email from authAccounts table (where email OTP stores it)
+    const authAccount = await ctx.db
+      .query("authAccounts")
+      .withIndex("userIdAndProvider", (q) => q.eq("userId", userId))
+      .first();
+
+    return {
+      ...user,
+      email: authAccount?.providerAccountId ?? null,
+    };
   },
 });
