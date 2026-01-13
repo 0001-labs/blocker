@@ -10,9 +10,6 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/ds-one@alpha/DS1/1-root/one.css"
     />
-    <script type="module">
-      import "https://cdn.jsdelivr.net/npm/ds-one@alpha/dist/ds-one.bundle.min.js";
-    </script>
 
     <style>
       * {
@@ -240,9 +237,18 @@
       .github-icon {
         width: 20px;
         height: 20px;
-        fill: currentColor;
+        color: var(--text-color);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .github-icon {
+          filter: invert(1);
+        }
       }
     </style>
+    <script type="module" crossorigin src="/assets/main-C56Pcnln.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
+    <link rel="modulepreload" crossorigin href="/assets/paginated_query_client-DGc-MdvA.js">
   </head>
   <body>
     <div class="main-content">
@@ -279,6 +285,5 @@
       </div>
     </footer>
 
-    <script type="module" src="/js/auth/signin-main.tsx"></script>
   </body>
 </html>

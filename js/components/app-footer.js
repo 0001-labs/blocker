@@ -32,17 +32,18 @@ export class AppFooter extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #cecece;
+      color: var(--text-color-dimmed, #cecece);
       transition: color 0.15s;
     }
 
     .footer-github:hover {
-      color: var(--text-color, #000);
+      color: var(--text-color, #fff);
     }
 
     .footer-github svg {
       width: 20px;
       height: 20px;
+      fill: currentColor;
     }
   `;
 

@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Screen Time Blocker</title>
+
+    <!-- DS one -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/ds-one@alpha/DS1/1-root/one.css"
+    />
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      body {
+        margin: 0;
+        padding: var(--2);
+        min-height: 100vh;
+        background: var(--background);
+        color: var(--text-color);
+        font-family: var(--typeface-regular), system-ui, sans-serif;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      /* Navigation */
+      .nav {
+        display: flex;
+        gap: var(--05);
+        margin-bottom: var(--2);
+        border-bottom: 1px solid var(--slate-light);
+        padding-bottom: var(--05);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .nav {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .nav-item {
+        padding: var(--05) var(--1);
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        text-decoration: none;
+        border-radius: var(--025);
+        cursor: pointer;
+        transition: color 0.15s, background 0.15s;
+      }
+
+      .nav-item:hover {
+        color: var(--text-color);
+        background: var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .nav-item:hover {
+          background: var(--slate-dark);
+        }
+      }
+
+      .nav-item.active {
+        color: var(--text-color);
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+      }
+
+      .setup-check {
+        color: var(--every-green);
+        margin-left: var(--025);
+        vertical-align: middle;
+      }
+
+      .setup-check.hidden {
+        display: none;
+      }
+
+      .nav-spacer {
+        flex: 1;
+      }
+
+      /* Settings menu */
+      .settings-menu {
+        position: relative;
+      }
+
+      .settings-toggle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--slate-light);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        transition: background 0.15s;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .settings-toggle {
+          background: var(--slate-dark);
+        }
+      }
+
+      .settings-toggle:hover {
+        background: var(--accent-color);
+        color: var(--white);
+      }
+
+      .settings-dropdown {
+        position: absolute;
+        top: calc(100% + var(--05));
+        right: 0;
+        background: var(--background);
+        border: 1px solid var(--slate-light);
+        border-radius: var(--025);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        min-width: 220px;
+        z-index: 100;
+        display: none;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .settings-dropdown {
+          border-color: var(--slate-dark);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+      }
+
+      .settings-dropdown.open {
+        display: block;
+      }
+
+      .settings-item {
+        padding: var(--1);
+        border-bottom: 1px solid var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .settings-item {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .settings-item:last-child {
+        border-bottom: none;
+      }
+
+      .settings-item-label {
+        font-size: calc(12px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin-bottom: var(--025);
+      }
+
+      .settings-item-value {
+        font-size: calc(14px * var(--sf, 1));
+        display: flex;
+        align-items: center;
+        gap: var(--05);
+      }
+
+      .settings-item-note {
+        font-size: calc(11px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin-top: var(--025);
+      }
+
+      .notification-status {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--025);
+      }
+
+      .notification-status::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--tuned-red);
+      }
+
+      .notification-status.enabled::before {
+        background: var(--every-green);
+      }
+
+      .settings-button {
+        width: 100%;
+        padding: var(--05) var(--1);
+        border: none;
+        border-radius: var(--025);
+        background: transparent;
+        color: var(--text-color);
+        font-family: inherit;
+        font-size: calc(14px * var(--sf, 1));
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .settings-button:hover {
+        background: var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .settings-button:hover {
+          background: var(--slate-dark);
+        }
+      }
+
+      /* Views */
+      .view {
+        display: none;
+      }
+
+      .view.active {
+        display: block;
+      }
+
+      /* Schedule info bar (above calendar) */
+      .schedule-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--1);
+        width: 100%;
+      }
+
+      .schedule-status {
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+      }
+
+      .help-btn {
+        background: none;
+        border: none;
+        padding: var(--025);
+        cursor: pointer;
+        color: var(--text-color-dimmed);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.15s, background 0.15s;
+        margin-left: auto;
+      }
+
+      .help-btn:hover {
+        color: var(--text-color);
+        background: var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .help-btn:hover {
+          background: var(--slate-dark);
+        }
+      }
+
+      .help-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 500;
+        padding: var(--2);
+      }
+
+      .help-popup.hidden {
+        display: none;
+      }
+
+      .help-popup-content {
+        background: var(--background);
+        border-radius: var(--05);
+        padding: var(--2);
+        max-width: 400px;
+        width: 100%;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .help-popup-close {
+        position: absolute;
+        top: var(--05);
+        right: var(--05);
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: var(--text-color-dimmed);
+        cursor: pointer;
+        line-height: 1;
+        padding: var(--025);
+      }
+
+      .help-popup-close:hover {
+        color: var(--text-color);
+      }
+
+      .help-popup-content h4 {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(14px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--1);
+      }
+
+      .help-popup-content ul {
+        margin: 0;
+        padding-left: var(--2);
+        color: var(--text-color-dimmed);
+        font-size: calc(14px * var(--sf, 1));
+        line-height: 1.6;
+      }
+
+      .help-popup-content li {
+        margin-bottom: var(--05);
+      }
+
+      /* Blocking card */
+      .blocking-card {
+        background: #dff0ff;
+        border-radius: 5px;
+        padding: 20px 15px 40px;
+        min-height: 236px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .blocking-card {
+          background: #1a3a5c;
+        }
+      }
+
+      .blocking-card-content {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .blocking-session-title {
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color);
+        margin: 0;
+      }
+
+      .blocking-session-time {
+        font-size: calc(12px * var(--sf, 1));
+        color: #565656;
+        margin: 0;
+      }
+
+      .blocking-session-time .date {
+        color: #959595;
+      }
+
+      .blocking-helper-text {
+        font-size: calc(12px * var(--sf, 1));
+        color: #595959;
+        margin: var(--1) 0 0;
+        padding: 0 10px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .blocking-session-time {
+          color: #a0a0a0;
+        }
+        .blocking-session-time .date {
+          color: #777;
+        }
+        .blocking-helper-text {
+          color: #888;
+        }
+      }
+
+      /* Session ended view */
+      .session-ended-title {
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color);
+        margin: 0 0 20px;
+        text-align: center;
+      }
+
+      .credentials-label {
+        font-size: calc(12px * var(--sf, 1));
+        color: #595959;
+        margin: 0 0 10px;
+        text-align: center;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .credentials-label {
+          color: #888;
+        }
+      }
+
+      .credential-box {
+        background: #c6e5ff;
+        border-radius: 3px;
+        padding: 10px 15px;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .credential-box {
+          background: #0d4a7a;
+        }
+      }
+
+      .credential-box-label {
+        font-size: calc(11px * var(--sf, 1));
+        color: #595959;
+        margin: 0 0 4px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .credential-box-label {
+          color: #a0a0a0;
+        }
+      }
+
+      .credential-box-value {
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color);
+        margin: 0;
+        font-family: var(--typeface-mono, monospace), monospace;
+        word-break: break-all;
+      }
+
+      .session-ended-instructions {
+        margin-top: var(--2);
+      }
+
+      .session-ended-instructions h3 {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(14px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--1);
+      }
+
+      .session-ended-instructions ol {
+        margin: 0;
+        padding-left: var(--2);
+        color: var(--text-color-dimmed);
+        font-size: calc(14px * var(--sf, 1));
+        line-height: 1.6;
+      }
+
+      .session-ended-instructions li {
+        margin-bottom: var(--05);
+      }
+
+      .close-session-btn {
+        margin-top: var(--2);
+      }
+
+      /* Toggle switch */
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--05) 0;
+      }
+
+      .toggle-label {
+        font-size: calc(14px * var(--sf, 1));
+      }
+
+      .toggle-switch {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        background: var(--slate-light);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.2s;
+        flex-shrink: 0;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .toggle-switch {
+          background: var(--slate-dark);
+        }
+      }
+
+      .toggle-switch::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        background: var(--white);
+        border-radius: 50%;
+        transition: transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      .toggle-switch.active {
+        background: var(--accent-color);
+      }
+
+      .toggle-switch.active::after {
+        transform: translateX(20px);
+      }
+
+      /* Select dropdown */
+      .settings-select {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--05) 0;
+      }
+
+      .settings-select select {
+        padding: var(--025) var(--05);
+        border: 1px solid var(--slate-light);
+        border-radius: var(--025);
+        background: var(--background);
+        color: var(--text-color);
+        font-family: inherit;
+        font-size: calc(14px * var(--sf, 1));
+        cursor: pointer;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .settings-select select {
+          border-color: var(--slate-dark);
+        }
+      }
+
+      /* Cards */
+      .card {
+        background: var(--slate-light);
+        border-radius: var(--05);
+        padding: var(--2);
+        margin-bottom: var(--2);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .card {
+          background: var(--slate-dark);
+        }
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--1);
+      }
+
+      .card-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(14px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0;
+      }
+
+      /* Instructions */
+      .instructions {
+        background: var(--slate-light);
+        border-radius: var(--05);
+        padding: var(--2);
+        margin: var(--2) 0;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .instructions {
+          background: var(--slate-dark);
+        }
+      }
+
+      .instructions h3 {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(14px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--1);
+      }
+
+      .instructions ol {
+        margin: 0;
+        padding-left: var(--2);
+      }
+
+      .instructions li {
+        margin-bottom: var(--05);
+        line-height: 1.5;
+      }
+
+      /* Page title (Setup, Settings, FAQ) */
+      .page-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(28px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--2);
+      }
+
+      /* Disabled button state */
+      ds-button[disabled] {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      .todo-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 var(--2);
+      }
+
+      .todo-item {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--1);
+        padding: var(--1) 0;
+        border-bottom: 1px solid var(--slate-light);
+      }
+
+      .todo-number {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(16px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        min-width: 24px;
+        flex-shrink: 0;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .todo-item {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .todo-item:last-child {
+        border-bottom: none;
+      }
+
+      .todo-checkbox {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--slate-light);
+        border-radius: 4px;
+        flex-shrink: 0;
+        margin-top: 2px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s, border-color 0.15s;
+      }
+
+      .todo-checkbox:hover:not(.disabled) {
+        border-color: var(--accent-color);
+      }
+
+      .todo-checkbox.disabled {
+        cursor: default;
+      }
+
+      .todo-checkbox.disabled:not(.checked) {
+        opacity: 0.5;
+      }
+
+      .todo-checkbox.checked {
+        background: var(--accent-color);
+        border-color: var(--accent-color);
+      }
+
+      .todo-checkbox.checked::after {
+        content: "✓";
+        color: var(--white);
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .todo-checkbox {
+          border-color: var(--slate-dark);
+        }
+      }
+
+      .todo-content {
+        flex: 1;
+      }
+
+      .todo-content p {
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      .todo-content p.note {
+        font-size: calc(12px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin-top: var(--025);
+      }
+
+      .todo-item.collapsed .todo-collapsible {
+        display: none;
+      }
+
+      .todo-summary {
+        display: none;
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin-top: var(--025);
+      }
+
+      .todo-item.collapsed .todo-summary {
+        display: block;
+      }
+
+      .todo-item.collapsed .todo-content {
+        cursor: pointer;
+      }
+
+      .todo-item.collapsed .todo-content p:first-child::after {
+        content: " (click to edit)";
+        font-size: calc(12px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+      }
+
+      .section-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(16px * var(--sf, 1));
+        font-weight: 500;
+        margin: var(--2) 0 var(--1);
+      }
+
+      .section-title:first-of-type {
+        margin-top: 0;
+      }
+
+      /* Password reveal */
+      .password-box {
+        background: var(--background);
+        border-radius: var(--025);
+        padding: var(--1);
+        font-family: var(--typeface-mono), monospace;
+        font-size: calc(16px * var(--sf, 1));
+        word-break: break-all;
+        margin: var(--1) 0;
+      }
+
+      .password-actions {
+        display: flex;
+        gap: var(--1);
+      }
+
+      /* Setup flow */
+      .setup-step {
+        margin-bottom: var(--1);
+        color: var(--text-color-dimmed);
+      }
+
+      .setup-description {
+        margin-bottom: var(--2);
+        color: var(--text-color-dimmed);
+        line-height: 1.5;
+      }
+
+      .form-group {
+        margin-bottom: var(--1);
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: var(--025);
+        font-size: calc(12px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: var(--05) var(--1);
+        border: 1px solid var(--slate-light);
+        border-radius: var(--025);
+        background: var(--background);
+        color: var(--text-color);
+        font-family: inherit;
+        font-size: calc(14px * var(--sf, 1));
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .form-group input {
+          border-color: var(--slate-dark);
+        }
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--accent-color);
+      }
+
+      .form-row {
+        display: flex;
+        gap: var(--1);
+        margin-top: var(--1);
+      }
+
+      .credential-display {
+        font-size: calc(14px * var(--sf, 1));
+        margin-bottom: var(--05);
+      }
+
+      .credential-display span {
+        color: var(--text-color-dimmed);
+      }
+
+      .locked-notice {
+        text-align: center;
+        color: var(--text-color-dimmed);
+        font-size: calc(12px * var(--sf, 1));
+        margin-top: var(--2);
+      }
+
+      /* Unlock countdown */
+      .unlock-countdown {
+        display: flex;
+        align-items: center;
+        gap: var(--05);
+        font-family: var(--typeface-mono), monospace;
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--accent-color);
+      }
+
+      .unlock-countdown.hidden {
+        display: none;
+      }
+
+      /* Settings page */
+
+      .settings-section {
+        margin-bottom: var(--2);
+        padding-bottom: var(--2);
+        border-bottom: 1px solid var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .settings-section {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .settings-section:last-of-type {
+        border-bottom: none;
+      }
+
+      .settings-section-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(14px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0 0 var(--05);
+        color: var(--text-color-dimmed);
+      }
+
+      .settings-email {
+        font-size: calc(16px * var(--sf, 1));
+        margin: 0;
+      }
+
+      .settings-description {
+        font-size: calc(14px * var(--sf, 1));
+        color: var(--text-color-dimmed);
+        margin: 0 0 var(--1);
+        line-height: 1.5;
+      }
+
+      .settings-notification-row {
+        margin: 0 0 var(--05);
+      }
+
+      .settings-credential-display {
+        font-size: calc(14px * var(--sf, 1));
+        margin: 0 0 var(--1);
+      }
+
+      .settings-blocked-notice {
+        font-size: calc(12px * var(--sf, 1));
+        color: var(--tuned-red);
+        margin: var(--05) 0 0;
+      }
+
+      .settings-blocked-notice.hidden {
+        display: none;
+      }
+
+      .admin-link {
+        color: var(--accent-color);
+        text-decoration: none;
+        font-size: calc(14px * var(--sf, 1));
+      }
+
+      .admin-link:hover {
+        text-decoration: underline;
+      }
+
+      /* Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: var(--2);
+      }
+
+      .modal-overlay.hidden {
+        display: none;
+      }
+
+      .modal {
+        background: var(--background);
+        border-radius: var(--05);
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--1) var(--2);
+        border-bottom: 1px solid var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .modal-header {
+          border-bottom-color: var(--slate-dark);
+        }
+      }
+
+      .modal-title {
+        font-family: var(--typeface-medium), system-ui, sans-serif;
+        font-size: calc(16px * var(--sf, 1));
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--text-color-dimmed);
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .modal-close:hover {
+        color: var(--text-color);
+      }
+
+      .modal-body {
+        padding: var(--2);
+      }
+
+      .modal-footer {
+        display: flex;
+        gap: var(--1);
+        justify-content: flex-end;
+        padding: var(--1) var(--2);
+        border-top: 1px solid var(--slate-light);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .modal-footer {
+          border-top-color: var(--slate-dark);
+        }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/app-CZjn0LvY.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
+    <link rel="modulepreload" crossorigin href="/assets/app-header-BLTtKcoa.js">
+    <link rel="modulepreload" crossorigin href="/assets/paginated_query_client-DGc-MdvA.js">
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <app-header current-page="app" id="app-header"></app-header>
+
+      <!-- Setup -->
+      <div class="view setup-page" id="view-setup">
+        <h1 class="page-title">
+          Setup
+          <svg class="setup-check hidden" id="setup-check" width="24" height="24" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle; margin-left: 4px;">
+            <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm3.78 5.22a.75.75 0 0 0-1.06 0L7 8.94 5.28 7.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.06 0l4.25-4.25a.75.75 0 0 0 0-1.06Z"/>
+          </svg>
+        </h1>
+
+        <ul class="todo-list">
+          <li class="todo-item">
+            <span class="todo-number">1.</span>
+            <div class="todo-content">
+              <p>Go to <a href="https://account.apple.com/account" target="_blank">account.apple.com</a> to create an Apple Account only to use for Screen Time recovery</p>
+            </div>
+            <div class="todo-checkbox" id="checkbox-create-account"></div>
+          </li>
+          <li class="todo-item" id="todo-credentials">
+            <span class="todo-number">2.</span>
+            <div class="todo-content">
+              <p>Store the Apple Account credentials here</p>
+              <p class="note">If you generated the password via a password manager, make sure to delete it from there. Otherwise you would be able to bypass the screen time block.</p>
+              <div class="form-group" style="margin-top: var(--1);">
+                <label for="apple-id">Apple Account email</label>
+                <input
+                  type="email"
+                  id="apple-id"
+                  placeholder="blocker-recovery@icloud.com"
+                />
+              </div>
+              <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Paste password" />
+              </div>
+            </div>
+            <div class="todo-checkbox" id="checkbox-credentials"></div>
+          </li>
+        </ul>
+
+        <ds-button primary id="go-to-schedule-btn" disabled>Go to schedule</ds-button>
+      </div>
+
+      <!-- Main: Idle -->
+      <div class="view" id="view-idle">
+        <div id="schedule-editor-idle"></div>
+
+        <!-- Help popup -->
+        <div class="help-popup hidden" id="schedule-help-popup">
+          <div class="help-popup-content">
+            <button class="help-popup-close" id="schedule-help-close">&times;</button>
+            <h4>How to create sessions</h4>
+            <ul>
+              <li>Drag on the calendar to create blocking sessions</li>
+              <li>Click a block to toggle weekly repeat (green tint = recurring)</li>
+              <li>Right-click or long press to delete</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main: Blocking -->
+      <div class="view" id="view-blocking">
+        <div class="blocking-card">
+          <div class="blocking-card-content">
+            <p class="blocking-session-title" id="blocking-session-title">Your session has started</p>
+            <p class="blocking-session-time" id="blocking-session-time"></p>
+          </div>
+        </div>
+        <p class="blocking-helper-text">
+          Your Screen Time credentials will be shown in the blue rectangle by the end of the session
+        </p>
+      </div>
+
+      <!-- Main: Session Ended (credentials reveal) -->
+      <div class="view" id="view-session-ended">
+        <div class="blocking-card">
+          <div class="blocking-card-content">
+            <p class="session-ended-title" id="session-ended-title">Your session has ended</p>
+            <p class="credentials-label">This is your recovery Apple Account credentials</p>
+            <div class="credential-box">
+              <p class="credential-box-label">Email</p>
+              <p class="credential-box-value" id="revealed-email">—</p>
+            </div>
+            <div class="credential-box">
+              <p class="credential-box-label">Password</p>
+              <p class="credential-box-value" id="revealed-password">—</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="session-ended-instructions">
+          <h3>How to unlock Screen Time Settings</h3>
+          <ol>
+            <li>Open System Settings → Screen Time</li>
+            <li>Click "Change Passcode…" then "Forgot Passcode?"</li>
+            <li>Sign in with the Apple Account above to reset the Screen Time passcode</li>
+          </ol>
+        </div>
+
+        <ds-button primary class="close-session-btn" id="close-session-btn">Close session</ds-button>
+      </div>
+
+
+      <!-- Settings -->
+      <div class="view" id="view-settings">
+        <h1 class="page-title">Settings</h1>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Account</h3>
+          <p class="settings-email" id="settings-user-email"></p>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Recovery credentials</h3>
+          <p class="settings-description">
+            Apple Account used for Screen Time passcode recovery.
+          </p>
+          <p class="settings-credential-display" id="settings-credential-display">Not configured</p>
+          <ds-button secondary id="change-credentials-btn">Change credentials</ds-button>
+          <p class="settings-blocked-notice hidden" id="credentials-blocked-notice">Cannot change during blocking</p>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Notifications</h3>
+          <p class="settings-notification-row">
+            <span class="notification-status" id="notification-status">Disabled</span>
+          </p>
+          <p class="settings-description">
+            Reminds you to start blocking when a session begins.
+          </p>
+          <ds-button secondary id="enable-notifications-btn" class="hidden">Enable notifications</ds-button>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Calendar</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">Show 24 hour calendar</span>
+            <div class="toggle-switch" id="toggle-24h"></div>
+          </div>
+          <div class="settings-select">
+            <span class="toggle-label">First day of week</span>
+            <select id="first-day-of-week">
+              <option value="0">Sunday</option>
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-section hidden" id="admin-section">
+          <h3 class="settings-section-title">Admin</h3>
+          <a href="admin.html" class="admin-link">Open admin panel</a>
+        </div>
+
+        <ds-button secondary id="settings-logout">Log out</ds-button>
+      </div>
+
+      <!-- Credentials Modal -->
+      <div class="modal-overlay hidden" id="credentials-modal">
+        <div class="modal">
+          <div class="modal-header">
+            <h3 class="modal-title">Change credentials</h3>
+            <button class="modal-close" id="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p class="settings-description">
+              Apple Account used for Screen Time passcode recovery.
+            </p>
+            <div class="form-group">
+              <label for="edit-apple-id">Apple ID email</label>
+              <input
+                type="email"
+                id="edit-apple-id"
+                placeholder="blocker-recovery@icloud.com"
+              />
+            </div>
+            <div class="form-group">
+              <label for="edit-password">Password (leave blank to keep current)</label>
+              <input
+                type="password"
+                id="edit-password"
+                placeholder="Paste new password"
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <ds-button secondary id="modal-cancel">Cancel</ds-button>
+            <ds-button primary id="save-credentials">Save</ds-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>
