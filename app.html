@@ -1888,6 +1888,13 @@
       async function init() {
         if (await checkAuth()) {
           await loadVault();
+
+          // Check if navigated from another page with settings intent
+          if (sessionStorage.getItem("blocker-show-settings") === "true") {
+            sessionStorage.removeItem("blocker-show-settings");
+            updateSettingsView();
+            showView("view-settings");
+          }
         }
       }
 

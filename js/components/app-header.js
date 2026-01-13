@@ -217,8 +217,14 @@ export class AppHeader extends LitElement {
   }
 
   _handleSettingsClick() {
-    // Dispatch event for view change (no hash in URL)
-    this.dispatchEvent(new CustomEvent("navigate-settings", { bubbles: true, composed: true }));
+    // If on app.html, dispatch event for view change
+    if (window.location.pathname.endsWith("app.html") || window.location.pathname.endsWith("/app")) {
+      this.dispatchEvent(new CustomEvent("navigate-settings", { bubbles: true, composed: true }));
+    } else {
+      // Navigate to app.html with settings flag in sessionStorage
+      sessionStorage.setItem("blocker-show-settings", "true");
+      window.location.href = "app.html";
+    }
   }
 
   render() {
