@@ -1,0 +1,1 @@
+import"./modulepreload-polyfill-B5Qt9EMX.js";import"./app-header-D4RMZK07.js";import"./app-footer-DuE2NRyU.js";document.querySelectorAll(".faq-question").forEach(t=>{t.addEventListener("click",()=>{t.closest(".faq-item").classList.toggle("open")})});

@@ -10,33 +10,12 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/ds-one@alpha/DS1/1-root/one.css"
     />
+    <link rel="stylesheet" href="styles/base.css" />
     <script type="module">
       import "https://cdn.jsdelivr.net/npm/ds-one@alpha/dist/ds-one.bundle.min.js";
     </script>
 
     <style>
-      * {
-        box-sizing: border-box;
-      }
-
-      .hidden {
-        display: none !important;
-      }
-
-      body {
-        margin: 0;
-        padding: var(--2);
-        min-height: 100vh;
-        background: var(--background);
-        color: var(--text-color);
-        font-family: var(--typeface-regular), system-ui, sans-serif;
-      }
-
-      .container {
-        max-width: 600px;
-        margin: 0 auto;
-      }
-
       /* Navigation */
       .nav {
         display: flex;
@@ -610,19 +589,7 @@
         line-height: 1.5;
       }
 
-      /* Page title (Setup, Settings, FAQ) */
-      .page-title {
-        font-family: var(--typeface-medium), system-ui, sans-serif;
-        font-size: calc(28px * var(--sf, 1));
-        font-weight: 500;
-        margin: 0 0 var(--2);
-      }
-
-      /* Disabled button state */
-      ds-button[disabled] {
-        opacity: 0.4;
-        pointer-events: none;
-      }
+      /* Page title and disabled button are in base.css */
 
       .todo-list {
         list-style: none;
@@ -779,38 +746,7 @@
         line-height: 1.5;
       }
 
-      .form-group {
-        margin-bottom: var(--1);
-      }
-
-      .form-group label {
-        display: block;
-        margin-bottom: var(--025);
-        font-size: calc(12px * var(--sf, 1));
-        color: var(--text-color-dimmed);
-      }
-
-      .form-group input {
-        width: 100%;
-        padding: var(--05) var(--1);
-        border: 1px solid var(--slate-light);
-        border-radius: var(--025);
-        background: var(--background);
-        color: var(--text-color);
-        font-family: inherit;
-        font-size: calc(14px * var(--sf, 1));
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .form-group input {
-          border-color: var(--slate-dark);
-        }
-      }
-
-      .form-group input:focus {
-        outline: none;
-        border-color: var(--accent-color);
-      }
+      /* Form styles are in base.css */
 
       .form-row {
         display: flex;
@@ -915,85 +851,7 @@
         text-decoration: underline;
       }
 
-      /* Modal */
-      .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        padding: var(--2);
-      }
-
-      .modal-overlay.hidden {
-        display: none;
-      }
-
-      .modal {
-        background: var(--background);
-        border-radius: var(--05);
-        width: 100%;
-        max-width: 400px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      }
-
-      .modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: var(--1) var(--2);
-        border-bottom: 1px solid var(--slate-light);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .modal-header {
-          border-bottom-color: var(--slate-dark);
-        }
-      }
-
-      .modal-title {
-        font-family: var(--typeface-medium), system-ui, sans-serif;
-        font-size: calc(16px * var(--sf, 1));
-        font-weight: 500;
-        margin: 0;
-      }
-
-      .modal-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: var(--text-color-dimmed);
-        cursor: pointer;
-        padding: 0;
-        line-height: 1;
-      }
-
-      .modal-close:hover {
-        color: var(--text-color);
-      }
-
-      .modal-body {
-        padding: var(--2);
-      }
-
-      .modal-footer {
-        display: flex;
-        gap: var(--1);
-        justify-content: flex-end;
-        padding: var(--1) var(--2);
-        border-top: 1px solid var(--slate-light);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .modal-footer {
-          border-top-color: var(--slate-dark);
-        }
-      }
+      /* Modal styles are in base.css */
     </style>
   </head>
   <body>
@@ -1207,22 +1065,22 @@
         getPassword,
         saveCredentials,
         syncScheduleToWorker,
-      } from "./js/api.js";
+      } from "./src/api.ts";
       import {
         initAuth,
         isAuthenticated,
         clearAuth,
         getCurrentJwt,
-      } from "./js/auth.js";
-      import { convex } from "./js/convex.js";
-      import { createScheduleEditor } from "./js/schedule.js";
+      } from "./src/auth.ts";
+      import { convex } from "./src/convex.ts";
+      import { createScheduleEditor } from "./src/schedule.ts";
       import {
         isSupported as notificationsSupported,
         getPermission,
         requestPermission,
         scheduleBlockingNotifications,
-      } from "./js/notifications.js";
-      import "./js/components/app-header.js";
+      } from "./src/notifications.ts";
+      import "./src/components/app-header.ts";
 
       // State
       let vault = null;

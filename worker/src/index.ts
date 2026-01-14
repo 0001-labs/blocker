@@ -54,6 +54,35 @@ function errorResponse(error: string, status: number): Response {
 }
 
 /**
+ * Require admin authentication
+ */
+function requireAdmin(request: Request, env: Env): Response | null {
+  const adminKey = request.headers.get("X-Admin-Key");
+  const expectedSecret = env.ADMIN_SECRET || "blocker-dev-admin-2026";
+  if (adminKey !== expectedSecret) {
+    return errorResponse("Unauthorized", 401);
+  }
+  return null;
+}
+
+/**
+ * Get vault by token or return error response
+ */
+async function getVaultOrError(
+  token: string | null,
+  env: Env
+): Promise<Vault | Response> {
+  if (!token) {
+    return errorResponse("Missing token", 400);
+  }
+  const data = await env.VAULTS.get(`vault:${token}`);
+  if (!data) {
+    return errorResponse("Vault not found", 404);
+  }
+  return JSON.parse(data) as Vault;
+}
+
+/**
  * Check if currently in a blocking session
  */
 function getBlockingState(sessions: BlockSession[]): {
@@ -295,24 +324,13 @@ export default {
 
       // POST /admin/simulate-start?token=xxx - Simulate session start (admin only)
       if (url.pathname === "/admin/simulate-start" && request.method === "POST") {
-        const adminKey = request.headers.get("X-Admin-Key");
-        const expectedSecret = env.ADMIN_SECRET || "blocker-dev-admin-2026";
-
-        if (adminKey !== expectedSecret) {
-          return errorResponse("Unauthorized", 401);
-        }
+        const authError = requireAdmin(request, env);
+        if (authError) return authError;
 
         const token = url.searchParams.get("token");
-        if (!token) {
-          return errorResponse("Missing token", 400);
-        }
-
-        const vaultData = await env.VAULTS.get(`vault:${token}`);
-        if (!vaultData) {
-          return errorResponse("Vault not found", 404);
-        }
-
-        const vault: Vault = JSON.parse(vaultData);
+        const vaultOrError = await getVaultOrError(token, env);
+        if (vaultOrError instanceof Response) return vaultOrError;
+        const vault = vaultOrError;
 
         // Create a session that covers "now" for the next 2 hours
         const now = new Date();
@@ -340,24 +358,13 @@ export default {
 
       // POST /admin/simulate-end?token=xxx - Simulate session end (admin only)
       if (url.pathname === "/admin/simulate-end" && request.method === "POST") {
-        const adminKey = request.headers.get("X-Admin-Key");
-        const expectedSecret = env.ADMIN_SECRET || "blocker-dev-admin-2026";
-
-        if (adminKey !== expectedSecret) {
-          return errorResponse("Unauthorized", 401);
-        }
+        const authError = requireAdmin(request, env);
+        if (authError) return authError;
 
         const token = url.searchParams.get("token");
-        if (!token) {
-          return errorResponse("Missing token", 400);
-        }
-
-        const vaultData = await env.VAULTS.get(`vault:${token}`);
-        if (!vaultData) {
-          return errorResponse("Vault not found", 404);
-        }
-
-        const vault: Vault = JSON.parse(vaultData);
+        const vaultOrError = await getVaultOrError(token, env);
+        if (vaultOrError instanceof Response) return vaultOrError;
+        const vault = vaultOrError;
 
         // Clear all sessions to end blocking
         vault.sessions = [];
@@ -370,22 +377,12 @@ export default {
 
       // DELETE /admin/vault?token=xxx - Force delete vault (admin only, bypasses blocking check)
       if (url.pathname === "/admin/vault" && request.method === "DELETE") {
-        const adminKey = request.headers.get("X-Admin-Key");
-        const expectedSecret = env.ADMIN_SECRET || "blocker-dev-admin-2026";
-
-        if (adminKey !== expectedSecret) {
-          return errorResponse("Unauthorized", 401);
-        }
+        const authError = requireAdmin(request, env);
+        if (authError) return authError;
 
         const token = url.searchParams.get("token");
-        if (!token) {
-          return errorResponse("Missing token", 400);
-        }
-
-        const vaultData = await env.VAULTS.get(`vault:${token}`);
-        if (!vaultData) {
-          return errorResponse("Vault not found", 404);
-        }
+        const vaultOrError = await getVaultOrError(token, env);
+        if (vaultOrError instanceof Response) return vaultOrError;
 
         // Force delete - no blocking check
         await env.VAULTS.delete(`vault:${token}`);

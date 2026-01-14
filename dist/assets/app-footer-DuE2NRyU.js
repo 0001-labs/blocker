@@ -1,4 +1,4 @@
-var i=Object.defineProperty;var l=(t,e,o)=>e in t?i(t,e,{enumerable:!0,configurable:!0,writable:!0,value:o}):t[e]=o;var r=(t,e,o)=>l(t,typeof e!="symbol"?e+"":e,o);import"./modulepreload-polyfill-B5Qt9EMX.js";import"./app-header-BLTtKcoa.js";import{LitElement as a,css as c,html as n}from"https://esm.sh/lit@3";class s extends a{render(){const e=new Date().getFullYear();return n`
+import{k as n,l as c,m as f,t as p}from"./app-header-D4RMZK07.js";var u=Object.getOwnPropertyDescriptor,g=(e,s,l,a)=>{for(var t=a>1?void 0:a?u(s,l):s,r=e.length-1,i;r>=0;r--)(i=e[r])&&(t=i(t)||t);return t};let o=class extends c{render(){const e=new Date().getFullYear();return f`
       <footer class="footer">
         <span class="footer-copyright">${e} © 0001</span>
         <a
@@ -13,7 +13,7 @@ var i=Object.defineProperty;var l=(t,e,o)=>e in t?i(t,e,{enumerable:!0,configura
           </svg>
         </a>
       </footer>
-    `}}r(s,"styles",c`
+    `}};o.styles=n`
     :host {
       display: block;
       font-family: var(--typeface-regular, system-ui), system-ui, sans-serif;
@@ -53,4 +53,4 @@ var i=Object.defineProperty;var l=(t,e,o)=>e in t?i(t,e,{enumerable:!0,configura
       height: 20px;
       fill: currentColor;
     }
-  `);customElements.define("app-footer",s);document.querySelectorAll(".faq-question").forEach(t=>{t.addEventListener("click",()=>{t.closest(".faq-item").classList.toggle("open")})});
+  `;o=g([p("app-footer")],o);

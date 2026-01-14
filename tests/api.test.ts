@@ -26,7 +26,7 @@ import {
   getToken,
   setToken,
   generateVaultToken,
-} from "../js/api.js";
+} from "../src/api.js";
 
 describe("Token Management", () => {
   beforeEach(() => {
@@ -84,7 +84,7 @@ describe("API Client - getVault", () => {
   });
 
   it("should return null when no token provided", async () => {
-    const { getVault } = await import("../js/api.js");
+    const { getVault } = await import("../src/api.js");
     const result = await getVault(undefined);
     expect(result).toBeNull();
     expect(mockFetch).not.toHaveBeenCalled();
@@ -102,7 +102,7 @@ describe("API Client - getVault", () => {
         }),
     });
 
-    const { getVault } = await import("../js/api.js");
+    const { getVault } = await import("../src/api.js");
     const result = await getVault("test-token");
 
     expect(mockFetch).toHaveBeenCalledWith(
@@ -121,7 +121,7 @@ describe("API Client - getVault", () => {
       status: 404,
     });
 
-    const { getVault } = await import("../js/api.js");
+    const { getVault } = await import("../src/api.js");
     const result = await getVault("nonexistent-token");
     expect(result).toBeNull();
   });
@@ -141,7 +141,7 @@ describe("API Client - saveCredentials", () => {
       json: () => Promise.resolve({ ok: true }),
     });
 
-    const { saveCredentials } = await import("../js/api.js");
+    const { saveCredentials } = await import("../src/api.js");
     await saveCredentials("test-token", {
       screenTimeAppleId: "test@icloud.com",
       screenTimePassword: "secret123",
@@ -164,7 +164,7 @@ describe("API Client - saveCredentials", () => {
       json: () => Promise.resolve({ error: "Cannot modify during blocking" }),
     });
 
-    const { saveCredentials } = await import("../js/api.js");
+    const { saveCredentials } = await import("../src/api.js");
     await expect(
       saveCredentials("test-token", {
         screenTimeAppleId: "test@icloud.com",
@@ -189,7 +189,7 @@ describe("API Client - getPassword", () => {
       json: () => Promise.resolve({ password: "my-secret-password" }),
     });
 
-    const { getPassword } = await import("../js/api.js");
+    const { getPassword } = await import("../src/api.js");
     const result = await getPassword("test-token");
 
     expect(result).toEqual({
@@ -210,7 +210,7 @@ describe("API Client - getPassword", () => {
         }),
     });
 
-    const { getPassword } = await import("../js/api.js");
+    const { getPassword } = await import("../src/api.js");
     const result = await getPassword("test-token");
 
     expect(result).toEqual({
@@ -222,7 +222,7 @@ describe("API Client - getPassword", () => {
   });
 
   it("should throw when no token provided", async () => {
-    const { getPassword } = await import("../js/api.js");
+    const { getPassword } = await import("../src/api.js");
     await expect(getPassword(undefined)).rejects.toThrow("No token");
   });
 });
@@ -241,7 +241,7 @@ describe("API Client - syncScheduleToWorker", () => {
       json: () => Promise.resolve({ ok: true }),
     });
 
-    const { syncScheduleToWorker } = await import("../js/api.js");
+    const { syncScheduleToWorker } = await import("../src/api.js");
     const sessions = [
       {
         id: "1",

@@ -2,30 +2,62 @@
  * Week grid schedule editor - Figma design implementation
  */
 
+import type { BlockSession } from "./api";
+
+interface ScheduleEditorOptions {
+  lockedSessionId?: string | null;
+}
+
+interface CalendarPreferences {
+  show24Hours: boolean;
+  firstDayOfWeek: number;
+}
+
+interface CellData {
+  day: number;
+  hour: number;
+}
+
+interface ScheduleEditor {
+  setSessions: (sessions: BlockSession[]) => void;
+  getSessions: () => BlockSession[];
+  render: () => void;
+  setNextSessionText: (text: string) => void;
+  setPreferences: (prefs: Partial<CalendarPreferences>) => void;
+}
+
+// Internal session type with required recurring field
+type InternalSession = Omit<BlockSession, "recurring"> & { recurring: boolean };
+
 const DEFAULT_START_HOUR = 7;
 const DEFAULT_END_HOUR = 17; // 5 PM
 const HOUR_HEIGHT = 25; // Height of each hour row in px
 const MAX_WEEKS_FUTURE = 4; // Maximum weeks into the future
 
-export function createScheduleEditor(container, sessions = [], onChange, options = {}) {
+export function createScheduleEditor(
+  container: HTMLElement,
+  sessions: BlockSession[] = [],
+  onChange: (sessions: BlockSession[]) => void,
+  options: ScheduleEditorOptions = {}
+): ScheduleEditor {
   // Ensure all sessions have recurring property
-  let currentSessions = sessions.map(s => ({ ...s, recurring: s.recurring ?? false }));
+  let currentSessions: InternalSession[] = sessions.map((s) => ({ ...s, recurring: s.recurring ?? false }));
   let isDragging = false;
-  let dragStart = null;
-  let dragCurrent = null;
+  let dragStart: CellData | null = null;
+  let dragCurrent: CellData | null = null;
   let weekOffset = 0; // 0 = current week
 
   // Options for locked sessions (ongoing blocks)
   const { lockedSessionId = null } = options;
 
   // Calendar preferences (defaults)
-  let preferences = {
+  let preferences: CalendarPreferences = {
     show24Hours: false,
     firstDayOfWeek: 1, // 0=Sun, 1=Mon, etc.
   };
 
   // Get effective hour range based on preferences
-  function getHourRange() {
+  function getHourRange(): { start: number; end: number } {
     if (preferences.show24Hours) {
       return { start: 0, end: 23 };
     }
@@ -33,7 +65,7 @@ export function createScheduleEditor(container, sessions = [], onChange, options
   }
 
   // Get the dates for the current week view
-  function getWeekDates() {
+  function getWeekDates(): Date[] {
     const today = new Date();
     const currentDay = today.getDay(); // 0 = Sunday
     const firstDay = preferences.firstDayOfWeek;
@@ -43,9 +75,9 @@ export function createScheduleEditor(container, sessions = [], onChange, options
     if (daysToSubtract < 0) daysToSubtract += 7;
 
     const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - daysToSubtract + (weekOffset * 7));
+    weekStart.setDate(today.getDate() - daysToSubtract + weekOffset * 7);
 
-    const dates = [];
+    const dates: Date[] = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(weekStart);
       date.setDate(weekStart.getDate() + i);
@@ -55,44 +87,43 @@ export function createScheduleEditor(container, sessions = [], onChange, options
   }
 
   // Format hour for display
-  function formatHour(hour) {
-    if (hour === 0) return '12 AM';
-    if (hour === 12) return '12 PM';
+  function formatHour(hour: number): string {
+    if (hour === 0) return "12 AM";
+    if (hour === 12) return "12 PM";
     if (hour < 12) return `${hour} AM`;
     return `${hour - 12} PM`;
   }
 
   // Format time range for session display (e.g., "9:00–11:30")
-  function formatTimeRange(startHour, startMinute, endHour, endMinute) {
-    const formatPart = (h, m) => `${h}:${m.toString().padStart(2, '0')}`;
+  function formatTimeRange(
+    startHour: number,
+    startMinute: number,
+    endHour: number,
+    endMinute: number
+  ): string {
+    const formatPart = (h: number, m: number) => `${h}:${m.toString().padStart(2, "0")}`;
     return `${formatPart(startHour, startMinute)}–${formatPart(endHour, endMinute)}`;
   }
 
   // Format day header (e.g., "Mon 12")
-  function formatDayNumber(date) {
+  function formatDayNumber(date: Date): number {
     return date.getDate();
   }
 
   // Get short day name
-  function getDayName(date) {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  function getDayName(date: Date): string {
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     return days[date.getDay()];
   }
 
   // Get short month name
-  function getMonthName(date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function getMonthName(date: Date): string {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return months[date.getMonth()];
   }
 
-  // Convert date's day of week to our 0-6 index (Mon=0, Sun=6)
-  function getDayIndex(date) {
-    const day = date.getDay();
-    return day === 0 ? 6 : day - 1; // Convert Sun=0 to Sun=6, Mon=1 to Mon=0
-  }
-
   // Calculate position for a time within the grid
-  function getTimePosition(hour, minute = 0) {
+  function getTimePosition(hour: number, minute = 0): number {
     const { start } = getHourRange();
     const hourOffset = hour - start;
     const minuteOffset = minute / 60;
@@ -100,7 +131,7 @@ export function createScheduleEditor(container, sessions = [], onChange, options
   }
 
   // Get current time position (for "now" line)
-  function getNowPosition() {
+  function getNowPosition(): number | null {
     const now = new Date();
     const hour = now.getHours();
     const minute = now.getMinutes();
@@ -111,12 +142,12 @@ export function createScheduleEditor(container, sessions = [], onChange, options
   }
 
   // Check if today is in current week view
-  function isTodayInView() {
+  function isTodayInView(): boolean {
     const weekDates = getWeekDates();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    return weekDates.some(d => {
+    return weekDates.some((d) => {
       const date = new Date(d);
       date.setHours(0, 0, 0, 0);
       return date.getTime() === today.getTime();
@@ -124,7 +155,7 @@ export function createScheduleEditor(container, sessions = [], onChange, options
   }
 
   // Get today's column index (0-6) if in view
-  function getTodayColumnIndex() {
+  function getTodayColumnIndex(): number {
     const weekDates = getWeekDates();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -139,7 +170,7 @@ export function createScheduleEditor(container, sessions = [], onChange, options
     return -1;
   }
 
-  function render() {
+  function render(): void {
     container.innerHTML = "";
     container.className = "schedule-editor";
 
@@ -160,7 +191,8 @@ export function createScheduleEditor(container, sessions = [], onChange, options
     const nextSessionText = document.createElement("span");
     nextSessionText.className = "schedule-next-session";
     nextSessionText.id = "schedule-next-session-text";
-    nextSessionText.textContent = currentSessions.length > 0 ? "Next session begins..." : "No sessions scheduled";
+    nextSessionText.textContent =
+      currentSessions.length > 0 ? "Next session begins..." : "No sessions scheduled";
 
     infoLeft.appendChild(nextSessionText);
 
@@ -254,23 +286,23 @@ export function createScheduleEditor(container, sessions = [], onChange, options
       // Grid cells container (for relative positioning of blocks)
       const cellsContainer = document.createElement("div");
       cellsContainer.className = "schedule-cells-container";
-      cellsContainer.dataset.day = dayIdx;
+      cellsContainer.dataset.day = String(dayIdx);
 
       // Hour cells
       for (let hour = startHour; hour <= endHour; hour++) {
         const cell = document.createElement("div");
         cell.className = "schedule-cell";
-        cell.dataset.day = dayIdx;
-        cell.dataset.hour = hour;
+        cell.dataset.day = String(dayIdx);
+        cell.dataset.hour = String(hour);
         cellsContainer.appendChild(cell);
       }
 
       // Add session blocks as overlays
       // Use the actual date's day of week (0=Sun, 1=Mon, etc.)
       const standardDay = date.getDay();
-      const daySessions = currentSessions.filter(s => s.day === standardDay);
+      const daySessions = currentSessions.filter((s) => s.day === standardDay);
 
-      daySessions.forEach(session => {
+      daySessions.forEach((session) => {
         // Only show if session overlaps with visible hours
         if (session.endHour <= startHour || session.startHour > endHour) return;
 
@@ -322,8 +354,10 @@ export function createScheduleEditor(container, sessions = [], onChange, options
         const blockTime = document.createElement("span");
         blockTime.className = "schedule-block-time";
         blockTime.textContent = formatTimeRange(
-          session.startHour, session.startMinute,
-          session.endHour, session.endMinute
+          session.startHour,
+          session.startMinute,
+          session.endHour,
+          session.endMinute
         );
 
         blockContent.appendChild(blockHeader);
@@ -344,7 +378,7 @@ export function createScheduleEditor(container, sessions = [], onChange, options
           e.preventDefault();
           e.stopPropagation();
           if (session.id === lockedSessionId) return;
-          currentSessions = currentSessions.filter(s => s.id !== session.id);
+          currentSessions = currentSessions.filter((s) => s.id !== session.id);
           onChange(currentSessions);
           render();
         });
@@ -383,20 +417,22 @@ export function createScheduleEditor(container, sessions = [], onChange, options
     gridContainer.addEventListener("touchend", handleTouchEnd);
   }
 
-  function getCellFromEvent(e) {
-    const cell = e.target.closest(".schedule-cell");
+  function getCellFromEvent(e: Event): CellData | null {
+    const target = e.target as HTMLElement;
+    const cell = target.closest(".schedule-cell") as HTMLElement | null;
     if (!cell) return null;
     return {
-      day: parseInt(cell.dataset.day),
-      hour: parseInt(cell.dataset.hour),
+      day: parseInt(cell.dataset.day || "0"),
+      hour: parseInt(cell.dataset.hour || "0"),
     };
   }
 
-  function handleMouseDown(e) {
+  function handleMouseDown(e: MouseEvent): void {
     if (e.button !== 0) return; // Left click only
 
     // Ignore clicks on blocks (handled by block click handlers)
-    if (e.target.closest(".schedule-block")) return;
+    const target = e.target as HTMLElement;
+    if (target.closest(".schedule-block")) return;
 
     const cell = getCellFromEvent(e);
     if (!cell) return;
@@ -409,21 +445,21 @@ export function createScheduleEditor(container, sessions = [], onChange, options
     updateDragVisual();
   }
 
-  function handleMouseMove(e) {
+  function handleMouseMove(e: MouseEvent): void {
     if (!isDragging) return;
     const cell = getCellFromEvent(e);
     if (!cell) return;
 
     // Only allow single column drag
-    if (cell.day !== dragStart.day) return;
+    if (dragStart && cell.day !== dragStart.day) return;
 
     dragCurrent = cell;
     updateDragVisual();
   }
 
-  function updateDragVisual() {
+  function updateDragVisual(): void {
     // Remove existing drag visual
-    document.querySelectorAll(".schedule-cell-dragging").forEach(el => {
+    document.querySelectorAll(".schedule-cell-dragging").forEach((el) => {
       el.classList.remove("schedule-cell-dragging");
     });
 
@@ -432,19 +468,19 @@ export function createScheduleEditor(container, sessions = [], onChange, options
     const minHour = Math.min(dragStart.hour, dragCurrent.hour);
     const maxHour = Math.max(dragStart.hour, dragCurrent.hour);
 
-    document.querySelectorAll(`.schedule-cell[data-day="${dragStart.day}"]`).forEach(cell => {
-      const hour = parseInt(cell.dataset.hour);
+    document.querySelectorAll(`.schedule-cell[data-day="${dragStart.day}"]`).forEach((cell) => {
+      const hour = parseInt((cell as HTMLElement).dataset.hour || "0");
       if (hour >= minHour && hour <= maxHour) {
         cell.classList.add("schedule-cell-dragging");
       }
     });
   }
 
-  function handleMouseUp(e) {
+  function handleMouseUp(_e: MouseEvent | TouchEvent): void {
     if (!isDragging) return;
 
     // Remove drag visual
-    document.querySelectorAll(".schedule-cell-dragging").forEach(el => {
+    document.querySelectorAll(".schedule-cell-dragging").forEach((el) => {
       el.classList.remove("schedule-cell-dragging");
     });
 
@@ -458,13 +494,11 @@ export function createScheduleEditor(container, sessions = [], onChange, options
 
       // Check for overlaps
       const overlaps = currentSessions.some(
-        (s) =>
-          s.day === standardDay &&
-          !(maxHour < s.startHour || minHour >= s.endHour)
+        (s) => s.day === standardDay && !(maxHour < s.startHour || minHour >= s.endHour)
       );
 
       if (!overlaps && maxHour >= minHour) {
-        const newSession = {
+        const newSession: InternalSession = {
           id: crypto.randomUUID(),
           day: standardDay,
           startHour: minHour,
@@ -487,11 +521,12 @@ export function createScheduleEditor(container, sessions = [], onChange, options
   }
 
   // Touch handlers
-  let longPressTimer = null;
-  let touchedBlock = null;
+  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  let touchedBlock: HTMLElement | null = null;
 
-  function handleTouchStart(e) {
-    const block = e.target.closest(".schedule-block");
+  function handleTouchStart(e: TouchEvent): void {
+    const target = e.target as HTMLElement;
+    const block = target.closest(".schedule-block") as HTMLElement | null;
     if (block) {
       e.preventDefault();
       touchedBlock = block;
@@ -501,7 +536,7 @@ export function createScheduleEditor(container, sessions = [], onChange, options
 
       // Long press to delete
       longPressTimer = setTimeout(() => {
-        currentSessions = currentSessions.filter(s => s.id !== sessionId);
+        currentSessions = currentSessions.filter((s) => s.id !== sessionId);
         onChange(currentSessions);
         render();
         touchedBlock = null;
@@ -511,12 +546,12 @@ export function createScheduleEditor(container, sessions = [], onChange, options
 
     e.preventDefault();
     const touch = e.touches[0];
-    const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+    const cell = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null;
     if (!cell?.classList.contains("schedule-cell")) return;
 
-    const cellData = {
-      day: parseInt(cell.dataset.day),
-      hour: parseInt(cell.dataset.hour),
+    const cellData: CellData = {
+      day: parseInt(cell.dataset.day || "0"),
+      hour: parseInt(cell.dataset.hour || "0"),
     };
 
     isDragging = true;
@@ -525,7 +560,7 @@ export function createScheduleEditor(container, sessions = [], onChange, options
     updateDragVisual();
   }
 
-  function handleTouchMove(e) {
+  function handleTouchMove(e: TouchEvent): void {
     // Cancel long press if moving
     if (longPressTimer) {
       clearTimeout(longPressTimer);
@@ -536,21 +571,21 @@ export function createScheduleEditor(container, sessions = [], onChange, options
     if (!isDragging) return;
 
     const touch = e.touches[0];
-    const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+    const cell = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null;
     if (!cell?.classList.contains("schedule-cell")) return;
 
-    const cellData = {
-      day: parseInt(cell.dataset.day),
-      hour: parseInt(cell.dataset.hour),
+    const cellData: CellData = {
+      day: parseInt(cell.dataset.day || "0"),
+      hour: parseInt(cell.dataset.hour || "0"),
     };
 
-    if (cellData.day !== dragStart.day) return;
+    if (dragStart && cellData.day !== dragStart.day) return;
 
     dragCurrent = cellData;
     updateDragVisual();
   }
 
-  function handleTouchEnd(e) {
+  function handleTouchEnd(e: TouchEvent): void {
     // Handle short tap on block to toggle recurring
     if (touchedBlock && longPressTimer) {
       clearTimeout(longPressTimer);
@@ -558,7 +593,7 @@ export function createScheduleEditor(container, sessions = [], onChange, options
 
       const sessionId = touchedBlock.dataset.sessionId;
       if (sessionId && sessionId !== lockedSessionId) {
-        const session = currentSessions.find(s => s.id === sessionId);
+        const session = currentSessions.find((s) => s.id === sessionId);
         if (session) {
           session.recurring = !session.recurring;
           onChange(currentSessions);
@@ -574,21 +609,21 @@ export function createScheduleEditor(container, sessions = [], onChange, options
   }
 
   // Public methods
-  function setSessions(sessions) {
-    currentSessions = sessions.map(s => ({ ...s, recurring: s.recurring ?? false }));
+  function setSessions(sessions: BlockSession[]): void {
+    currentSessions = sessions.map((s) => ({ ...s, recurring: s.recurring ?? false }));
     render();
   }
 
-  function getSessions() {
+  function getSessions(): BlockSession[] {
     return [...currentSessions];
   }
 
-  function setNextSessionText(text) {
+  function setNextSessionText(text: string): void {
     const el = document.getElementById("schedule-next-session-text");
     if (el) el.textContent = text;
   }
 
-  function setPreferences(newPrefs) {
+  function setPreferences(newPrefs: Partial<CalendarPreferences>): void {
     preferences = { ...preferences, ...newPrefs };
     render();
   }

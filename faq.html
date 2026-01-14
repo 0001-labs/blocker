@@ -10,35 +10,9 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/ds-one@alpha/DS1/1-root/one.css"
     />
+    <link rel="stylesheet" href="styles/base.css" />
 
     <style>
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        padding: var(--2);
-        min-height: 100vh;
-        background: var(--background);
-        color: var(--text-color);
-        font-family: var(--typeface-regular), system-ui, sans-serif;
-      }
-
-      .container {
-        max-width: 600px;
-        margin: 0 auto;
-      }
-
-
-
-      .page-title {
-        font-family: var(--typeface-medium), system-ui, sans-serif;
-        font-size: calc(28px * var(--sf, 1));
-        font-weight: 500;
-        margin: 0 0 var(--2);
-      }
-
       .faq-item {
         border-bottom: 1px solid var(--slate-light);
       }
@@ -252,8 +226,8 @@
 
     <script type="module">
       // Import components
-      import "./js/components/app-header.js";
-      import "./js/components/app-footer.js";
+      import "./src/components/app-header.ts";
+      import "./src/components/app-footer.ts";
 
       // Accordion toggle
       document.querySelectorAll(".faq-question").forEach((question) => {

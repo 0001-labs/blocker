@@ -1,11 +1,13 @@
-import { LitElement, html, css } from "https://esm.sh/lit@3";
+import { LitElement, html, css } from "lit";
+import { customElement } from "lit/decorators.js";
 
 /**
  * App footer component with copyright and GitHub link
  * @element app-footer
  */
+@customElement("app-footer")
 export class AppFooter extends LitElement {
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
       font-family: var(--typeface-regular, system-ui), system-ui, sans-serif;
@@ -47,7 +49,7 @@ export class AppFooter extends LitElement {
     }
   `;
 
-  render() {
+  override render() {
     const year = new Date().getFullYear();
 
     return html`
@@ -69,4 +71,8 @@ export class AppFooter extends LitElement {
   }
 }
 
-customElements.define("app-footer", AppFooter);
+declare global {
+  interface HTMLElementTagNameMap {
+    "app-footer": AppFooter;
+  }
+}

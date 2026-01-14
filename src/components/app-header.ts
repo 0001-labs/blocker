@@ -1,4 +1,5 @@
-import { LitElement, html, css } from "https://esm.sh/lit@3";
+import { LitElement, html, css, PropertyValues } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 import { isAuthenticated } from "../auth.js";
 import { getToken, getVault } from "../api.js";
 
@@ -6,17 +7,29 @@ import { getToken, getVault } from "../api.js";
  * App header component with title, blocking status, and navigation
  * @element app-header
  */
+@customElement("app-header")
 export class AppHeader extends LitElement {
-  static properties = {
-    currentPage: { type: String, attribute: "current-page" },
-    isBlocking: { type: Boolean, state: true },
-    activeUntil: { type: String, attribute: "active-until" },
-    insanoMode: { type: Boolean, attribute: "insano-mode" },
-    _isAuthenticated: { type: Boolean, state: true },
-    _timeLeft: { type: String, state: true },
-  };
+  @property({ type: String, attribute: "current-page" })
+  currentPage = "app";
 
-  static styles = css`
+  @property({ type: Boolean, reflect: true })
+  isBlocking = false;
+
+  @property({ type: String, attribute: "active-until" })
+  activeUntil: string | null = null;
+
+  @property({ type: Boolean, attribute: "insano-mode" })
+  insanoMode = false;
+
+  @state()
+  private _isAuthenticated = false;
+
+  @state()
+  private _timeLeft = "";
+
+  private _timerInterval: ReturnType<typeof setInterval> | null = null;
+
+  static override styles = css`
     :host {
       display: block;
       font-family: var(--typeface-regular, system-ui), system-ui, sans-serif;
@@ -122,37 +135,26 @@ export class AppHeader extends LitElement {
     }
   `;
 
-  constructor() {
-    super();
-    this.currentPage = "app";
-    this.isBlocking = false;
-    this.activeUntil = null;
-    this.insanoMode = false;
-    this._isAuthenticated = false;
-    this._timeLeft = "";
-    this._timerInterval = null;
-  }
-
-  connectedCallback() {
+  override connectedCallback(): void {
     super.connectedCallback();
     this._isAuthenticated = isAuthenticated();
     this._loadBlockingStatus();
   }
 
-  disconnectedCallback() {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this._timerInterval) {
       clearInterval(this._timerInterval);
     }
   }
 
-  updated(changedProperties) {
+  override updated(changedProperties: PropertyValues): void {
     if (changedProperties.has("activeUntil") || changedProperties.has("isBlocking")) {
       this._updateTimer();
     }
   }
 
-  _updateTimer() {
+  private _updateTimer(): void {
     if (this._timerInterval) {
       clearInterval(this._timerInterval);
       this._timerInterval = null;
@@ -163,14 +165,16 @@ export class AppHeader extends LitElement {
       return;
     }
 
-    const update = () => {
+    const update = (): void => {
       const now = new Date();
-      const until = new Date(this.activeUntil);
-      const diffMs = until - now;
+      const until = new Date(this.activeUntil!);
+      const diffMs = until.getTime() - now.getTime();
 
       if (diffMs <= 0) {
         this._timeLeft = "0:00";
-        clearInterval(this._timerInterval);
+        if (this._timerInterval) {
+          clearInterval(this._timerInterval);
+        }
         return;
       }
 
@@ -189,7 +193,7 @@ export class AppHeader extends LitElement {
     this._timerInterval = setInterval(update, 1000);
   }
 
-  async _loadBlockingStatus() {
+  private async _loadBlockingStatus(): Promise<void> {
     if (!this._isAuthenticated) return;
 
     try {
@@ -203,12 +207,11 @@ export class AppHeader extends LitElement {
     }
   }
 
-  _getHomeUrl() {
+  private _getHomeUrl(): string {
     return this._isAuthenticated ? "app.html" : "index.html";
   }
 
-  _handleHomeClick() {
-    // If on app page, dispatch event for in-app navigation
+  private _handleHomeClick(): void {
     if (this.currentPage === "app") {
       this.dispatchEvent(new CustomEvent("navigate-home", { bubbles: true, composed: true }));
     } else {
@@ -216,18 +219,16 @@ export class AppHeader extends LitElement {
     }
   }
 
-  _handleSettingsClick() {
-    // If on app.html, dispatch event for view change
+  private _handleSettingsClick(): void {
     if (window.location.pathname.endsWith("app.html") || window.location.pathname.endsWith("/app")) {
       this.dispatchEvent(new CustomEvent("navigate-settings", { bubbles: true, composed: true }));
     } else {
-      // Navigate to app.html with settings flag in sessionStorage
       sessionStorage.setItem("blocker-show-settings", "true");
       window.location.href = "app.html";
     }
   }
 
-  render() {
+  override render() {
     const showSettingsIcon = this._isAuthenticated;
 
     return html`
@@ -257,4 +258,8 @@ export class AppHeader extends LitElement {
   }
 }
 
-customElements.define("app-header", AppHeader);
+declare global {
+  interface HTMLElementTagNameMap {
+    "app-header": AppHeader;
+  }
+}

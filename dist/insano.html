@@ -10,7 +10,6 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/ds-one@alpha/DS1/1-root/one.css"
     />
-    <link rel="stylesheet" href="styles/base.css" />
 
     <style>
       .page-header {
@@ -160,6 +159,11 @@
       }
 
     </style>
+    <script type="module" crossorigin src="/assets/insano-DidbM3HB.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
+    <link rel="modulepreload" crossorigin href="/assets/app-header-D4RMZK07.js">
+    <link rel="modulepreload" crossorigin href="/assets/app-footer-DuE2NRyU.js">
+    <link rel="stylesheet" crossorigin href="/assets/app-header-a0Z7m9f0.css">
   </head>
   <body>
     <div class="container">
@@ -305,88 +309,5 @@
     <!-- Footer -->
     <app-footer></app-footer>
 
-    <script type="module">
-      import "./src/components/app-header.ts";
-      import "./src/components/app-footer.ts";
-
-      const STORAGE_KEY = "insano-checklist";
-
-      // Get all checkbox items
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      const progressBadge = document.getElementById("progress-badge");
-      const progressPercent = document.getElementById("progress-percent");
-      const appHeader = document.getElementById("app-header");
-      const resetBtn = document.getElementById("reset-btn");
-
-      // Load saved state
-      function loadState() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const state = JSON.parse(saved);
-          checkboxes.forEach((cb) => {
-            if (state[cb.id]) {
-              cb.checked = true;
-              cb.closest(".checklist-item").classList.add("checked");
-            }
-          });
-        }
-        updateProgress();
-      }
-
-      // Save state
-      function saveState() {
-        const state = {};
-        checkboxes.forEach((cb) => {
-          state[cb.id] = cb.checked;
-        });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      }
-
-      // Update progress display
-      function updateProgress() {
-        const total = checkboxes.length;
-        const checked = Array.from(checkboxes).filter((cb) => cb.checked).length;
-        const percent = Math.round((checked / total) * 100);
-
-        progressPercent.textContent = `${percent}%`;
-
-        if (percent === 100) {
-          progressBadge.classList.add("complete");
-          appHeader.setAttribute("insano-mode", "");
-        } else {
-          progressBadge.classList.remove("complete");
-          appHeader.removeAttribute("insano-mode");
-        }
-      }
-
-      // Handle checkbox changes
-      checkboxes.forEach((cb) => {
-        cb.addEventListener("change", () => {
-          const item = cb.closest(".checklist-item");
-          if (cb.checked) {
-            item.classList.add("checked");
-          } else {
-            item.classList.remove("checked");
-          }
-          saveState();
-          updateProgress();
-        });
-      });
-
-      // Handle reset
-      resetBtn.addEventListener("click", () => {
-        if (confirm("Reset all checklist items?")) {
-          checkboxes.forEach((cb) => {
-            cb.checked = false;
-            cb.closest(".checklist-item").classList.remove("checked");
-          });
-          localStorage.removeItem(STORAGE_KEY);
-          updateProgress();
-        }
-      });
-
-      // Initialize
-      loadState();
-    </script>
   </body>
 </html>

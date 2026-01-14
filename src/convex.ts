@@ -5,7 +5,7 @@
 import { ConvexClient } from "convex/browser";
 
 // Get the Convex URL from environment
-const CONVEX_URL = import.meta.env.VITE_CONVEX_URL;
+const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string;
 
 if (!CONVEX_URL) {
   throw new Error("Missing VITE_CONVEX_URL environment variable. Run 'npx convex dev' first.");
@@ -18,48 +18,16 @@ export const convex = new ConvexClient(CONVEX_URL);
 const AUTH_TOKEN_KEY = "blocker_auth_token";
 
 // Auth state
-let currentUser = null;
-let isAuthenticatedState = false;
-let authStateCallbacks = [];
-
-function notifyAuthStateChange() {
-  authStateCallbacks.forEach((cb) => cb(currentUser));
-}
-
-// Subscribe to auth state changes
-export function onAuthStateChange(callback) {
-  authStateCallbacks.push(callback);
-  callback(currentUser);
-  return () => {
-    authStateCallbacks = authStateCallbacks.filter((cb) => cb !== callback);
-  };
-}
-
-// Check if user is authenticated
-export function isAuthenticated() {
-  return isAuthenticatedState;
-}
-
-// Get current user
-export function getCurrentUser() {
-  return currentUser;
-}
+let currentUser: unknown = null;
 
 // Get the Convex site URL for HTTP actions
-function getConvexSiteUrl() {
+function getConvexSiteUrl(): string {
   // Convert .cloud to .site for HTTP endpoints
   return CONVEX_URL.replace(".cloud", ".site");
 }
 
-// Sign in with Google (OAuth redirect)
-export function signInWithGoogle() {
-  const siteUrl = getConvexSiteUrl();
-  const redirectUrl = `${window.location.origin}/app.html`;
-  window.location.href = `${siteUrl}/api/auth/signin/google?redirectTo=${encodeURIComponent(redirectUrl)}`;
-}
-
 // Sign in with email (magic link via Resend)
-export async function signInWithEmail(email) {
+export async function signInWithEmail(email: string): Promise<unknown> {
   const siteUrl = getConvexSiteUrl();
   const redirectUrl = `${window.location.origin}/app.html`;
 
@@ -82,16 +50,14 @@ export async function signInWithEmail(email) {
 }
 
 // Sign out
-export async function signOut() {
+export async function signOut(): Promise<void> {
   localStorage.removeItem(AUTH_TOKEN_KEY);
-  convex.setAuth(null);
-  isAuthenticatedState = false;
+  convex.setAuth(async () => null);
   currentUser = null;
-  notifyAuthStateChange();
 }
 
 // Initialize auth - check URL for callback token
-export async function initAuth() {
+export async function initAuth(): Promise<boolean> {
   // Check URL for auth callback token
   const urlParams = new URLSearchParams(window.location.search);
   const token = urlParams.get("token");
@@ -108,44 +74,25 @@ export async function initAuth() {
   if (storedToken) {
     try {
       // Set auth on the Convex client (must be a function that returns the token)
-      convex.setAuth(() => storedToken);
+      convex.setAuth(async () => storedToken);
 
       // Validate by fetching current user
       const { api } = await import("../convex/_generated/api.js");
-      currentUser = await convex.query(api.users.current);
+      currentUser = await convex.query(api.users.current, {});
 
       if (currentUser) {
-        isAuthenticatedState = true;
-        notifyAuthStateChange();
         return true;
       } else {
         // Token invalid, clear it
         localStorage.removeItem(AUTH_TOKEN_KEY);
-        convex.setAuth(null);
+        convex.setAuth(async () => null);
       }
     } catch (err) {
       console.error("Auth validation failed:", err);
       localStorage.removeItem(AUTH_TOKEN_KEY);
-      convex.setAuth(null);
+      convex.setAuth(async () => null);
     }
   }
 
   return false;
 }
-
-// Query helper
-export async function query(queryFn, args = {}) {
-  return convex.query(queryFn, args);
-}
-
-// Mutation helper
-export async function mutation(mutationFn, args = {}) {
-  return convex.mutation(mutationFn, args);
-}
-
-// Subscribe to a query with real-time updates
-export function subscribe(queryFn, args, callback) {
-  return convex.onUpdate(queryFn, args, callback);
-}
-
-export { convex as client };

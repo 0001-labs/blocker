@@ -2,18 +2,26 @@
  * Web notifications for Blocker
  */
 
-let notificationPermission = Notification.permission;
-let scheduledNotifications = [];
+import type { BlockSession } from "./api";
 
-export function isSupported() {
+interface ScheduledNotification {
+  id: string;
+  timeoutId: ReturnType<typeof setTimeout>;
+  triggerAt: number;
+}
+
+let notificationPermission: NotificationPermission = Notification.permission;
+let scheduledNotifications: ScheduledNotification[] = [];
+
+export function isSupported(): boolean {
   return "Notification" in window;
 }
 
-export function getPermission() {
+export function getPermission(): NotificationPermission {
   return notificationPermission;
 }
 
-export async function requestPermission() {
+export async function requestPermission(): Promise<NotificationPermission> {
   if (!isSupported()) return "denied";
 
   const permission = await Notification.requestPermission();
@@ -21,7 +29,10 @@ export async function requestPermission() {
   return permission;
 }
 
-export function showNotification(title, options = {}) {
+export function showNotification(
+  title: string,
+  options: NotificationOptions = {}
+): Notification | null {
   if (notificationPermission !== "granted") return null;
 
   return new Notification(title, {
@@ -31,7 +42,12 @@ export function showNotification(title, options = {}) {
   });
 }
 
-export function scheduleNotification(id, title, body, triggerAt) {
+export function scheduleNotification(
+  id: string,
+  title: string,
+  body: string,
+  triggerAt: number
+): void {
   // Cancel existing notification with same ID
   cancelNotification(id);
 
@@ -53,7 +69,7 @@ export function scheduleNotification(id, title, body, triggerAt) {
   scheduledNotifications.push({ id, timeoutId, triggerAt });
 }
 
-export function cancelNotification(id) {
+export function cancelNotification(id: string): void {
   const existing = scheduledNotifications.find((n) => n.id === id);
   if (existing) {
     clearTimeout(existing.timeoutId);
@@ -61,7 +77,7 @@ export function cancelNotification(id) {
   }
 }
 
-export function cancelAllNotifications() {
+export function cancelAllNotifications(): void {
   for (const notification of scheduledNotifications) {
     clearTimeout(notification.timeoutId);
   }
@@ -71,7 +87,7 @@ export function cancelAllNotifications() {
 /**
  * Schedule notifications for blocking sessions
  */
-export function scheduleBlockingNotifications(sessions) {
+export function scheduleBlockingNotifications(sessions: BlockSession[]): void {
   cancelAllNotifications();
 
   const now = new Date();
